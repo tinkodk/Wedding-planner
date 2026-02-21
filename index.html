@@ -500,7 +500,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <h3>🪑 שיבוץ אורח לשולחן</h3>
     <div class="form-grid">
       <div class="form-group full"><label>בחר אורח</label><select id="sa-guest"></select></div>
-      <div class="form-group full"><label>שולחן</label><select id="sa-table"></select></div>
+      <div class="form-group full"><label>שולחן</label><input type="text" id="sa-table" placeholder="שם השולחן (לדוגמה: שולחן 1)" list="table-list"/><datalist id="table-list"></datalist></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('seatAssignModal')">ביטול</button>
@@ -987,14 +987,17 @@ function saveTable(){
 }
 function assignSeat(){
   const gid=+document.getElementById('sa-guest').value;
-  const tbl=document.getElementById('sa-table').value;
+  const tbl=document.getElementById('sa-table').value.trim();
+  if(!tbl){alert('נא להזין שם שולחן');return;}
   const g=db.guests.find(x=>x.id===gid);
   if(g){g.table=tbl;saveData();closeModal('seatAssignModal');renderSeating();renderGuests();}
 }
 function openSeatAssignModal(){
-  document.getElementById('sa-guest').innerHTML=db.guests.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
-  document.getElementById('sa-table').innerHTML=db.tables.map(t=>`<option>${t.name}</option>`).join('');
-  openModal('seatAssignModal');
+  if(!db.guests.length){alert('אין אורחים להציב. הוסף אורחים תחילה.');return;}
+  document.getElementById('sa-guest').innerHTML=db.guests.map(g=>`<option value="${g.id}">${g.name} (${g.count} אורחים)</option>`).join('');
+  document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
+  document.getElementById('sa-table').value='';
+  document.getElementById('seatAssignModal').classList.add('open');
 }
 
 // ============================= BAR =============================
