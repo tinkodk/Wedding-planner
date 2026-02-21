@@ -259,7 +259,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div style="margin-top:22px;">
     <div class="cards-row" id="guest-stats"></div>
     <div class="table-card">
-      <table><thead><tr><th>קבוצה</th><th>מקור</th><th>שם</th><th>מוזמנים</th><th>אישור הגעה</th><th>צרכים מיוחדים</th><th>שולחן</th><th>פעולות</th></tr></thead>
+      <table><thead><tr><th>קבוצה</th><th>מקור</th><th>שם</th><th>מוזמנים</th><th>אישור הגעה</th><th>הערות</th><th>שולחן</th><th>פעולות</th></tr></thead>
       <tbody id="guests-body"></tbody></table>
     </div>
   </div>
@@ -446,7 +446,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <select id="g-rsvp"><option value="ממתין">ממתין</option><option value="אישר">אישר הגעה</option><option value="ביטל">ביטל</option></select>
       </div>
       <div class="form-group"><label>שולחן</label><input type="text" id="g-table" placeholder="לדוגמה: שולחן 5"/></div>
-      <div class="form-group full"><label>צרכים מיוחדים</label><input type="text" id="g-notes" placeholder="צמחוני, ללא גלוטן..."/></div>
+      <div class="form-group full"><label>הערות</label><input type="text" id="g-notes" placeholder="הערות נוספות..."/></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('guestModal')">ביטול</button>
@@ -1160,13 +1160,13 @@ const IMPORT_SCHEMAS = {
     hint:`<strong>עמודות נדרשות:</strong><br>
       <span class="col-pill">שם</span><span class="col-pill">קבוצה</span>
       <span class="col-pill">מוזמנים</span><span class="col-pill">אישור הגעה</span>
-      <span class="col-pill">צרכים מיוחדים</span><span class="col-pill">שולחן</span><br>
+      <span class="col-pill">הערות</span><span class="col-pill">שולחן</span><br>
       <em>אישור הגעה: אישר / ממתין / ביטל</em>`,
-    template:[['שם','קבוצה','מוזמנים','אישור הגעה','צרכים מיוחדים','שולחן'],
+    template:[['שם','קבוצה','מוזמנים','אישור הגעה','הערות','שולחן'],
               ['ישראל ישראלי','משפחת חתן',2,'ממתין','','']],
     map:(row)=>({id:Date.now()+Math.random(),
       name:row['שם']||'',group:row['קבוצה']||'אחר',count:+row['מוזמנים']||1,
-      rsvp:row['אישור הגעה']||'ממתין',notes:row['צרכים מיוחדים']||'',table:row['שולחן']||''}),
+      rsvp:row['אישור הגעה']||'ממתין',notes:row['הערות']||'',table:row['שולחן']||''}),
     validate:(r)=>r['שם'],
     collection:'guests'
   },
@@ -1314,7 +1314,7 @@ function exportSection(section){
       ...db.budget.map(b=>[b.cat,b.desc,b.planned,b.actual,b.planned-b.actual,b.status])];
   }else if(section==='guests'){
     title='אורחים';
-    data=[['קבוצה','מקור','שם','מוזמנים','אישור הגעה','צרכים מיוחדים','שולחן'],
+    data=[['קבוצה','מקור','שם','מוזמנים','אישור הגעה','הערות','שולחן'],
       ...db.guests.map(g=>[g.group,g.source,g.name,g.count,g.rsvp,g.notes,g.table])];
   }else if(section==='tasks'){
     title='משימות';
