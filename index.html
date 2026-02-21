@@ -168,20 +168,19 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="nav">
     <div class="nav-label">ראשי</div>
     <button class="nav-item active" onclick="showSection('overview',this)"><span class="icon">🏠</span>סקירה כללית</button>
-
-    <div class="nav-label">תכנון</div>
-    <button class="nav-item" onclick="showSection('vendors',this)"><span class="icon">🏢</span>ספקים</button>
     <button class="nav-item" onclick="showSection('budget',this)"><span class="icon">💰</span>תקציב</button>
-    <button class="nav-item" onclick="showSection('guests',this)"><span class="icon">👥</span>אורחים</button>
+    <button class="nav-item" onclick="showSection('vendors',this)"><span class="icon">🏢</span>ספקים</button>
     <button class="nav-item" onclick="showSection('tasks',this)"><span class="icon">✅</span>משימות</button>
-    <button class="nav-item" onclick="showSection('seating',this)"><span class="icon">🪑</span>סידורי ישיבה</button>
 
-    <div class="nav-label">אירוע מוזיקלי</div>
+    <div class="nav-label">שירותים</div>
     <button class="nav-item" onclick="showSection('dj',this)"><span class="icon">🎵</span>מוזיקה / DJ</button>
     <button class="nav-item" onclick="showSection('disco',this)"><span class="icon">🎧</span>דיסקו שקט</button>
+    <button class="nav-item" onclick="showSection('bar',this)"><span class="icon">🍸</span>בר</button>
+    <button class="nav-item" onclick="showSection('photography',this)"><span class="icon">📸</span>צילום</button>
 
-    <div class="nav-label">אוכל ושתייה</div>
-    <button class="nav-item" onclick="showSection('bar',this)"><span class="icon">🍸</span>שירותי בר</button>
+    <div class="nav-label">אורחים</div>
+    <button class="nav-item" onclick="showSection('guests',this)"><span class="icon">👥</span>אורחים</button>
+    <button class="nav-item" onclick="showSection('seating',this)"><span class="icon">🪑</span>סידורי ישיבה</button>
   </div>
   <div class="sidebar-date">
     <div class="label">ימים לחתונה</div>
@@ -348,6 +347,22 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div class="table-card">
       <div class="table-card-header"><h3>⚙️ הגדרות בר</h3></div>
       <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="bar-settings"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PHOTOGRAPHY ===== -->
+<div id="sec-photography" class="section">
+  <div class="page-header">
+    <div><h1>צילום ווידאו 📸</h1><p>ניהול ספקי צילום ווידאו לאירוע</p></div>
+    <div class="header-actions">
+      <button class="btn btn-gold" onclick="alert('תכונה זו תתווסף בקרוב')">+ הוסף ספק</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="empty-state" style="padding:60px 20px">
+      <div class="icon" style="font-size:48px">📸</div>
+      <p style="margin-top:16px;font-size:15px">סעיף זה יתווסף בקרוב</p>
     </div>
   </div>
 </div>
