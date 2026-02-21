@@ -1606,11 +1606,13 @@ async function saveToGist(){
   }
 }
 async function loadFromGist(){
-  if(!syncConfig.token||!syncConfig.gistId){showToast('נא להגדיר Token ו-Gist ID תחילה','error');return;}
+  const token=document.getElementById('sync-token').value.trim()||syncConfig.token;
+  const gistId=document.getElementById('sync-gist-id').value.trim()||syncConfig.gistId;
+  if(!token||!gistId){showToast('נא להזין Token ו-Gist ID','error');return;}
   updateSyncStatus('loading');
   try {
-    const res=await fetch('https://api.github.com/gists/'+syncConfig.gistId,
-      {headers:{'Authorization':'token '+syncConfig.token}});
+    const res=await fetch('https://api.github.com/gists/'+gistId,
+      {headers:{'Authorization':'token '+token}});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const gist=await res.json();
     const content=gist.files['wedding-data.json']?.content;
