@@ -986,19 +986,51 @@ function renderSeating(){
     const seated=db.guests.filter(g=>g.table===t.name);
     const cnt=seated.reduce((s,g)=>s+Number(g.count),0);
     return `<div class="table-block">
-      <div class="table-name">🪑 ${t.name}</div>
+      <div class="table-name">🪑 ${t.name}
+        <div style="float:left;display:flex;gap:4px;">
+          <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
+        </div>
+      </div>
       <div class="seats-list">${seated.map(g=>`<span class="seat-chip filled">${g.name}</span>`).join('')}
       ${Array.from({length:Math.max(0,Number(t.seats)-cnt)}).map(()=>`<span class="seat-chip">פנוי</span>`).join('')}</div>
       <div class="table-count">${cnt} / ${t.seats} מקומות</div>
     </div>`;
   }).join('');
 }
+function editTable(id){
+  const t=db.tables.find(x=>x.id===id); if(!t)return; editingId=id;
+  document.getElementById('tb-name').value=t.name;
+  document.getElementById('tb-seats').value=t.seats;
+  openModal('tableModal');
+}
 function saveTable(){
   const name=document.getElementById('tb-name').value.trim();
   const seats=+document.getElementById('tb-seats').value||10;
   if(!name)return alert('נא להזין שם שולחן');
-  db.tables.push({id:Date.now(),name,seats});
-  saveData();closeModal('tableModal');renderSeating();
+  if(editingId){
+    const t=db.tables.find(x=>x.id===editingId);
+    const oldName=t.name;
+    t.name=name;
+    t.seats=seats;
+    // Update guest table assignments if table name changed
+    if(oldName!==name){
+      db.guests.filter(g=>g.table===oldName).forEach(g=>g.table=name);
+    }
+  }else{
+    db.tables.push({id:Date.now(),name,seats});
+  }
+  saveData();closeModal('tableModal');renderSeating();renderGuests();
+}
+function deleteTable(id){
+  if(!confirm('למחוק שולחן זה? אורחים המשובצים אליו יאבדו את השיבוץ.'))return;
+  const t=db.tables.find(x=>x.id===id);
+  if(t){
+    // Remove table assignment from guests
+    db.guests.filter(g=>g.table===t.name).forEach(g=>g.table='');
+    db.tables=db.tables.filter(x=>x.id!==id);
+    saveData();renderSeating();renderGuests();
+  }
 }
 function assignSeat(){
   const gid=+document.getElementById('sa-guest').value;
