@@ -259,7 +259,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div style="margin-top:22px;">
     <div class="cards-row" id="guest-stats"></div>
     <div class="table-card">
-      <table><thead><tr><th>שם</th><th>קבוצה</th><th>מוזמנים</th><th>אישור הגעה</th><th>צרכים מיוחדים</th><th>שולחן</th><th>פעולות</th></tr></thead>
+      <table><thead><tr><th>קבוצה</th><th>מקור</th><th>שם</th><th>מוזמנים</th><th>אישור הגעה</th><th>צרכים מיוחדים</th><th>שולחן</th><th>פעולות</th></tr></thead>
       <tbody id="guests-body"></tbody></table>
     </div>
   </div>
@@ -434,10 +434,13 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="modal">
     <h3>➕ אורח חדש</h3>
     <div class="form-grid">
-      <div class="form-group full"><label>שם מלא</label><input type="text" id="g-name"/></div>
-      <div class="form-group"><label>קבוצה / צד</label>
-        <select id="g-group"><option>משפחת חתן</option><option>משפחת כלה</option><option>חברים של חתן</option><option>חברים של כלה</option><option>עמיתים</option><option>אחר</option></select>
+      <div class="form-group"><label>קבוצה</label>
+        <select id="g-group"><option>Familia</option><option>Amigos</option><option>Hijos</option><option>Work</option><option>אחר</option></select>
       </div>
+      <div class="form-group"><label>מקור</label>
+        <select id="g-source"><option>Andrea</option><option>Tinko</option><option>משותף</option></select>
+      </div>
+      <div class="form-group full"><label>שם מלא</label><input type="text" id="g-name"/></div>
       <div class="form-group"><label>מספר מוזמנים</label><input type="number" id="g-count" value="1" min="1"/></div>
       <div class="form-group"><label>אישור הגעה</label>
         <select id="g-rsvp"><option value="ממתין">ממתין</option><option value="אישר">אישר הגעה</option><option value="ביטל">ביטל</option></select>
@@ -628,37 +631,37 @@ function loadData() {
     ],
     guests:[
       // Familia - Andrea
-      {id:1,name:'Papas',group:'Familia - Andrea',count:2,rsvp:'אישר',table:'',notes:''},
-      {id:2,name:'Marcela',group:'Familia - Andrea',count:7,rsvp:'אישר',table:'',notes:'Shira Y Bar'},
-      {id:3,name:'Mauricio',group:'Familia - Andrea',count:5,rsvp:'אישר',table:'',notes:''},
-      {id:4,name:'Mauricio (Nelly)',group:'Familia - Andrea',count:2,rsvp:'אישר',table:'',notes:''},
-      {id:5,name:'Fabiana',group:'Familia - Andrea',count:5,rsvp:'אישר',table:'',notes:''},
+      {id:1,name:'Papas',group:'Familia',source:'Andrea',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:2,name:'Marcela',group:'Familia',source:'Andrea',count:7,rsvp:'אישר',table:'',notes:'Shira Y Bar'},
+      {id:3,name:'Mauricio',group:'Familia',source:'Andrea',count:5,rsvp:'אישר',table:'',notes:''},
+      {id:4,name:'Mauricio (Nelly)',group:'Familia',source:'Andrea',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:5,name:'Fabiana',group:'Familia',source:'Andrea',count:5,rsvp:'אישר',table:'',notes:''},
       // Familia - Tinko
-      {id:6,name:'Hermanas',group:'Familia - Tinko',count:3,rsvp:'אישר',table:'',notes:''},
-      {id:7,name:'Padres Matan',group:'Familia - Tinko',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:6,name:'Hermanas',group:'Familia',source:'Tinko',count:3,rsvp:'אישר',table:'',notes:''},
+      {id:7,name:'Padres Matan',group:'Familia',source:'Tinko',count:2,rsvp:'אישר',table:'',notes:''},
       // Amigos - Andrea
-      {id:8,name:'Tia pupe',group:'Amigos - Andrea',count:10,rsvp:'אישר',table:'',notes:'maru con hijas'},
-      {id:9,name:'Paula',group:'Amigos - Andrea',count:2,rsvp:'אישר',table:'',notes:'sin hijos pero tal vez si'},
-      {id:10,name:'Sandra',group:'Amigos - Andrea',count:4,rsvp:'אישר',table:'',notes:'con hijas?'},
-      {id:11,name:'Annet',group:'Amigos - Andrea',count:2,rsvp:'אישר',table:'',notes:''},
-      {id:12,name:'Shashi',group:'Amigos - Andrea',count:1,rsvp:'אישר',table:'',notes:''},
-      {id:13,name:'Simone',group:'Amigos - Andrea',count:1,rsvp:'אישר',table:'',notes:''},
+      {id:8,name:'Tia pupe',group:'Amigos',source:'Andrea',count:10,rsvp:'אישר',table:'',notes:'maru con hijas'},
+      {id:9,name:'Paula',group:'Amigos',source:'Andrea',count:2,rsvp:'אישר',table:'',notes:'sin hijos pero tal vez si'},
+      {id:10,name:'Sandra',group:'Amigos',source:'Andrea',count:4,rsvp:'אישר',table:'',notes:'con hijas?'},
+      {id:11,name:'Annet',group:'Amigos',source:'Andrea',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:12,name:'Shashi',group:'Amigos',source:'Andrea',count:1,rsvp:'אישר',table:'',notes:''},
+      {id:13,name:'Simone',group:'Amigos',source:'Andrea',count:1,rsvp:'אישר',table:'',notes:''},
       // Amigos - Tinko
-      {id:14,name:'La barra',group:'Amigos - Tinko',count:8,rsvp:'אישר',table:'',notes:'Edu + Nito (2) + Colo (5)'},
-      {id:15,name:'Ari + Vivi',group:'Amigos - Tinko',count:2,rsvp:'ממתין',table:'',notes:''},
-      {id:16,name:'Lana',group:'Amigos - Tinko',count:2,rsvp:'ממתין',table:'',notes:''},
-      {id:17,name:'Myriam',group:'Amigos - Tinko',count:2,rsvp:'אישר',table:'',notes:''},
-      {id:18,name:'Garin',group:'Amigos - Tinko',count:8,rsvp:'אישר',table:'',notes:'Silvina (2) + Claudio (2) + Poli (2) + Java (2)'},
-      {id:19,name:'Majon/tnua',group:'Amigos - Tinko',count:6,rsvp:'אישר',table:'',notes:'Quique (2) + Racha + Lili (2) + Moron (1)'},
+      {id:14,name:'La barra',group:'Amigos',source:'Tinko',count:8,rsvp:'אישר',table:'',notes:'Edu + Nito (2) + Colo (5)'},
+      {id:15,name:'Ari + Vivi',group:'Amigos',source:'Tinko',count:2,rsvp:'ממתין',table:'',notes:''},
+      {id:16,name:'Lana',group:'Amigos',source:'Tinko',count:2,rsvp:'ממתין',table:'',notes:''},
+      {id:17,name:'Myriam',group:'Amigos',source:'Tinko',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:18,name:'Garin',group:'Amigos',source:'Tinko',count:8,rsvp:'אישר',table:'',notes:'Silvina (2) + Claudio (2) + Poli (2) + Java (2)'},
+      {id:19,name:'Majon/tnua',group:'Amigos',source:'Tinko',count:6,rsvp:'אישר',table:'',notes:'Quique (2) + Racha + Lili (2) + Moron (1)'},
       // Hijos
-      {id:20,name:'Ellos',group:'Hijos',count:7,rsvp:'אישר',table:'',notes:''},
-      {id:21,name:'Amigos',group:'Hijos',count:10,rsvp:'ממתין',table:'',notes:''},
+      {id:20,name:'Ellos',group:'Hijos',source:'משותף',count:7,rsvp:'אישר',table:'',notes:''},
+      {id:21,name:'Amigos',group:'Hijos',source:'משותף',count:10,rsvp:'ממתין',table:'',notes:''},
       // Work - Andrea
-      {id:22,name:'Work Andrea',group:'Work - Andrea',count:6,rsvp:'ממתין',table:'',notes:'Shira, Myriam, Oren, liat, MBSR, תמנע?'},
-      {id:23,name:'karin madrija y esposo',group:'Work - Andrea',count:2,rsvp:'אישר',table:'',notes:''},
-      {id:24,name:'shira Udi y esposos',group:'Work - Andrea',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:22,name:'Work Andrea',group:'Work',source:'Andrea',count:6,rsvp:'ממתין',table:'',notes:'Shira, Myriam, Oren, liat, MBSR, תמנע?'},
+      {id:23,name:'karin madrija y esposo',group:'Work',source:'Andrea',count:2,rsvp:'אישר',table:'',notes:''},
+      {id:24,name:'shira Udi y esposos',group:'Work',source:'Andrea',count:2,rsvp:'אישר',table:'',notes:''},
       // Work - Tinko
-      {id:25,name:'Work Tinko',group:'Work - Tinko',count:30,rsvp:'ממתין',table:'',notes:'Office + Ido'},
+      {id:25,name:'Work Tinko',group:'Work',source:'Tinko',count:30,rsvp:'ממתין',table:'',notes:'Office + Ido'},
     ],
     tasks:[
       {id:1,name:'סיור באולמות מועמדים',cat:'אולם',date:'2025-02-28',priority:'גבוהה',done:false},
@@ -876,7 +879,7 @@ function togglePartialPayment(){
 // ============================= GUESTS =============================
 function renderGuests(){
   const q=(document.getElementById('guest-search')||{}).value||'';
-  const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q));
+  const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q)||(g.source||'').includes(q));
   const total=db.guests.reduce((s,g)=>s+Number(g.count),0);
   const conf=db.guests.filter(g=>g.rsvp==='אישר').reduce((s,g)=>s+Number(g.count),0);
   const pend=db.guests.filter(g=>g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
@@ -887,20 +890,22 @@ function renderGuests(){
     <div class="stat-card"><div class="label">ממתינים</div><div class="value" style="color:var(--gold)">${pend}</div></div>
     <div class="stat-card"><div class="label">ביטלו</div><div class="value" style="color:var(--danger)">${canc}</div></div>`;
   document.getElementById('guests-body').innerHTML=list.length?list.map(g=>`
-    <tr><td><strong>${g.name}</strong></td><td>${g.group}</td><td>${g.count}</td>
+    <tr><td>${g.group}</td><td>${g.source||'–'}</td><td><strong>${g.name}</strong></td><td>${g.count}</td>
     <td>${badge(g.rsvp)}</td><td style="color:var(--text-dim)">${g.notes||'–'}</td>
     <td>${g.table||'–'}</td><td>${actionBtns('editGuest','guests',g.id)}</td></tr>`).join('')
-    :`<tr><td colspan="7"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
+    :`<tr><td colspan="8"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
 }
 function editGuest(id){
   const g=db.guests.find(x=>x.id===id); if(!g)return; editingId=id;
   document.getElementById('g-name').value=g.name; document.getElementById('g-group').value=g.group;
+  document.getElementById('g-source').value=g.source||'Andrea';
   document.getElementById('g-count').value=g.count; document.getElementById('g-rsvp').value=g.rsvp;
   document.getElementById('g-table').value=g.table||''; document.getElementById('g-notes').value=g.notes||'';
   openModal('guestModal');
 }
 function saveGuest(){
   const obj={name:document.getElementById('g-name').value.trim(),group:document.getElementById('g-group').value,
+    source:document.getElementById('g-source').value,
     count:+document.getElementById('g-count').value||1,rsvp:document.getElementById('g-rsvp').value,
     table:document.getElementById('g-table').value.trim(),notes:document.getElementById('g-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
@@ -1309,8 +1314,8 @@ function exportSection(section){
       ...db.budget.map(b=>[b.cat,b.desc,b.planned,b.actual,b.planned-b.actual,b.status])];
   }else if(section==='guests'){
     title='אורחים';
-    data=[['שם','קבוצה','מוזמנים','אישור הגעה','צרכים מיוחדים','שולחן'],
-      ...db.guests.map(g=>[g.name,g.group,g.count,g.rsvp,g.notes,g.table])];
+    data=[['קבוצה','מקור','שם','מוזמנים','אישור הגעה','צרכים מיוחדים','שולחן'],
+      ...db.guests.map(g=>[g.group,g.source,g.name,g.count,g.rsvp,g.notes,g.table])];
   }else if(section==='tasks'){
     title='משימות';
     data=[['משימה','קטגוריה','תאריך','עדיפות','סטטוס'],
