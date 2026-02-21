@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ניהול חתונה – טינקו</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#0d0d0f; --surface:#16161a; --surface2:#1e1e24; --surface3:#27272f;
+  --gold:#c9a84c; --gold-light:#e4c472; --gold-dim:#7a6230;
+  --text:#e8e8f0; --text-dim:#8888a0;
+  --danger:#e05c5c; --success:#5ce08a; --info:#5ca8e0;
+  --border:#2a2a35; --radius:12px; --sidebar:235px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;position:fixed;right:0;top:0;height:100vh;z-index:100;overflow-y:auto;}
+.sidebar-logo{padding:0 18px 18px;border-bottom:1px solid var(--border);text-align:center;}
+.sidebar-logo .rings{font-size:26px;margin-bottom:4px;}
+.sidebar-logo h2{font-size:14px;font-weight:800;color:var(--gold);}
+.sidebar-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.nav{padding:12px 8px;flex:1;display:flex;flex-direction:column;gap:2px;}
+.nav-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;padding:8px 12px 4px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-dim);transition:all .15s;border:none;background:none;width:100%;text-align:right;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(201,168,76,.15);color:var(--gold);}
+.nav-item .icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-date{padding:14px 18px;border-top:1px solid var(--border);text-align:center;}
+.sidebar-date .label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;}
+.sidebar-date .days{font-size:30px;font-weight:800;color:var(--gold);line-height:1;margin:4px 0;}
+.sidebar-date .sublabel{font-size:11px;color:var(--text-dim);}
+
+/* MAIN */
+#main{margin-right:var(--sidebar);flex:1;overflow-y:auto;height:100vh;}
+.page-header{padding:26px 34px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.page-header h1{font-size:23px;font-weight:800;}
+.page-header p{font-size:13px;color:var(--text-dim);margin-top:3px;}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.section{padding:22px 34px;display:none;}
+.section.active{display:block;}
+
+/* STAT CARDS */
+.cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px;margin-bottom:22px;}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.stat-card .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;}
+.stat-card .value{font-size:25px;font-weight:800;color:var(--gold);margin:5px 0 2px;}
+.stat-card .sub{font-size:12px;color:var(--text-dim);}
+
+/* TABLE */
+.table-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;}
+.table-card-header{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.table-card-header h3{font-size:14px;font-weight:700;}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--surface3);padding:9px 13px;text-align:right;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 13px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* BUTTONS */
+.btn{padding:7px 13px;border-radius:8px;border:none;cursor:pointer;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-gold:hover{background:var(--gold-light);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-info{background:rgba(92,168,224,.15);border:1px solid rgba(92,168,224,.3);color:var(--info);}
+.btn-info:hover{background:rgba(92,168,224,.25);}
+.btn-success{background:rgba(92,224,138,.15);border:1px solid rgba(92,224,138,.3);color:var(--success);}
+.btn-success:hover{background:rgba(92,224,138,.25);}
+.btn-danger{background:rgba(224,92,92,.15);color:var(--danger);border:1px solid rgba(224,92,92,.3);}
+.btn-danger:hover{background:rgba(224,92,92,.25);}
+.btn-sm{padding:4px 9px;font-size:12px;}
+
+/* IMPORT TOAST */
+.import-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;z-index:500;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);transition:opacity .3s;pointer-events:none;}
+.import-toast.hidden{opacity:0;}
+.import-toast.success{border-color:rgba(92,224,138,.4);color:var(--success);}
+.import-toast.error{border-color:rgba(224,92,92,.4);color:var(--danger);}
+
+/* IMPORT MODAL DETAILS */
+.template-hint{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text-dim);line-height:1.7;}
+.template-hint strong{color:var(--gold);}
+.col-pill{display:inline-block;background:rgba(201,168,76,.15);color:var(--gold);border-radius:20px;padding:1px 8px;font-size:11px;margin:2px 2px;}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:rgba(201,168,76,.05);}
+.drop-zone .dz-icon{font-size:32px;margin-bottom:8px;}
+.drop-zone p{font-size:13px;color:var(--text-dim);}
+.drop-zone p strong{color:var(--gold);cursor:pointer;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:26px;width:90%;max-width:540px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:18px;color:var(--gold);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.form-grid .full{grid-column:span 2;}
+.form-group label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:5px;font-weight:500;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;transition:border-color .2s;direction:rtl;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--gold);}
+.form-group select option{background:var(--surface3);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(92,224,138,.15);color:var(--success);}
+.badge-yellow{background:rgba(201,168,76,.2);color:var(--gold);}
+.badge-red{background:rgba(224,92,92,.15);color:var(--danger);}
+.badge-gray{background:rgba(136,136,160,.15);color:var(--text-dim);}
+.badge-blue{background:rgba(92,168,224,.15);color:var(--info);}
+
+/* PROGRESS */
+.progress-bar{background:var(--surface3);border-radius:100px;height:5px;overflow:hidden;margin-top:5px;}
+.progress-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width .4s;}
+
+/* TIMELINE */
+.timeline-item{display:flex;gap:14px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border);}
+.timeline-item:last-child{border-bottom:none;}
+.timeline-dot{width:12px;height:12px;border-radius:50%;margin-top:3px;flex-shrink:0;border:2px solid var(--gold);background:var(--bg);cursor:pointer;}
+.timeline-dot.done{background:var(--gold);}
+.task-text{flex:1;}
+.task-name{font-size:14px;font-weight:500;}
+.task-name.done{text-decoration:line-through;color:var(--text-dim);}
+.task-date{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+/* SEATING */
+.seating-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:13px;margin-top:18px;}
+.table-block{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:13px;transition:border-color .2s;}
+.table-block:hover{border-color:var(--gold);}
+.table-block .table-name{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;}
+.table-block .seats-list{display:flex;flex-wrap:wrap;gap:4px;}
+.seat-chip{font-size:10px;padding:2px 6px;background:rgba(255,255,255,.06);border-radius:20px;color:var(--text-dim);}
+.seat-chip.filled{background:rgba(201,168,76,.2);color:var(--gold);}
+.table-count{font-size:11px;color:var(--text-dim);margin-top:6px;}
+
+/* OVERVIEW */
+.overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.overview-block{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.overview-block h4{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;}
+.ov-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.ov-row:last-child{border-bottom:none;}
+
+/* MISC */
+.search-bar{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;width:190px;direction:rtl;}
+.search-bar:focus{outline:none;border-color:var(--gold);}
+.empty-state{text-align:center;padding:44px;color:var(--text-dim);}
+.empty-state .icon{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:14px;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.budget-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+.section-divider{height:1px;background:var(--border);margin:20px 0;}
+@media(max-width:700px){:root{--sidebar:0px;}#sidebar{display:none;}#main{margin-right:0;}.section{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-grid .full{grid-column:span 1;}.budget-totals{grid-template-columns:1fr;}.overview-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="rings">💍</div>
+    <h2>ניהול חתונה</h2>
+    <p>20 מאי 2025</p>
+  </div>
+  <div class="nav">
+    <div class="nav-label">ראשי</div>
+    <button class="nav-item active" onclick="showSection('overview',this)"><span class="icon">🏠</span>סקירה כללית</button>
+
+    <div class="nav-label">תכנון</div>
+    <button class="nav-item" onclick="showSection('vendors',this)"><span class="icon">🏢</span>ספקים</button>
+    <button class="nav-item" onclick="showSection('budget',this)"><span class="icon">💰</span>תקציב</button>
+    <button class="nav-item" onclick="showSection('guests',this)"><span class="icon">👥</span>אורחים</button>
+    <button class="nav-item" onclick="showSection('tasks',this)"><span class="icon">✅</span>משימות</button>
+    <button class="nav-item" onclick="showSection('seating',this)"><span class="icon">🪑</span>סידורי ישיבה</button>
+
+    <div class="nav-label">אירוע מוזיקלי</div>
+    <button class="nav-item" onclick="showSection('dj',this)"><span class="icon">🎵</span>מוזיקה / DJ</button>
+    <button class="nav-item" onclick="showSection('disco',this)"><span class="icon">🎧</span>דיסקו שקט</button>
+
+    <div class="nav-label">אוכל ושתייה</div>
+    <button class="nav-item" onclick="showSection('bar',this)"><span class="icon">🍸</span>שירותי בר</button>
+  </div>
+  <div class="sidebar-date">
+    <div class="label">ימים לחתונה</div>
+    <div class="days" id="daysLeft">–</div>
+    <div class="sublabel">20 מאי 2025</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+<!-- ===== OVERVIEW ===== -->
+<div id="sec-overview" class="section active">
+  <div class="page-header"><div><h1>ברוכים הבאים 🎉</h1><p>סקירת מצב כלל תכנון החתונה</p></div></div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="ov-stats"></div>
+    <div class="overview-grid">
+      <div class="overview-block"><h4>משימות קרובות</h4><div id="ov-tasks"></div></div>
+      <div class="overview-block"><h4>ספקים ממתינים לאישור</h4><div id="ov-vendors"></div></div>
+      <div class="overview-block"><h4>תקציב לפי קטגוריה</h4><div id="ov-budget"></div></div>
+      <div class="overview-block"><h4>אורחים שטרם אישרו</h4><div id="ov-guests"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VENDORS ===== -->
+<div id="sec-vendors" class="section">
+  <div class="page-header">
+    <div><h1>ספקים</h1><p>ניהול כל הספקים לאירוע</p></div>
+    <div class="header-actions">
+      <input class="search-bar" type="text" placeholder="חיפוש..." id="vendor-search" oninput="renderVendors()"/>
+      <button class="btn btn-info" onclick="triggerImport('vendors')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('vendors')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('vendorModal')">+ הוסף ספק</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="table-card">
+      <table><thead><tr><th>ספק</th><th>קטגוריה</th><th>איש קשר</th><th>טלפון</th><th>מחיר מוסכם ₪</th><th>שולם ₪</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+      <tbody id="vendors-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET ===== -->
+<div id="sec-budget" class="section">
+  <div class="page-header">
+    <div><h1>תקציב</h1><p>מתוכנן מול בפועל</p></div>
+    <div class="header-actions">
+      <button class="btn btn-info" onclick="triggerImport('budget')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('budget')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('budgetModal')">+ הוסף סעיף</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="budget-totals" id="budget-totals"></div>
+    <div class="table-card">
+      <table><thead><tr><th>קטגוריה</th><th>תיאור</th><th>תקציב ₪</th><th>בפועל ₪</th><th>הפרש ₪</th><th>סטטוס תשלום</th><th>פעולות</th></tr></thead>
+      <tbody id="budget-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GUESTS ===== -->
+<div id="sec-guests" class="section">
+  <div class="page-header">
+    <div><h1>אורחים</h1><p>רשימת הזמנות ואישורי הגעה</p></div>
+    <div class="header-actions">
+      <input class="search-bar" type="text" placeholder="חיפוש אורח..." id="guest-search" oninput="renderGuests()"/>
+      <button class="btn btn-info" onclick="triggerImport('guests')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('guests')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('guestModal')">+ הוסף אורח</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="guest-stats"></div>
+    <div class="table-card">
+      <table><thead><tr><th>שם</th><th>קבוצה</th><th>מוזמנים</th><th>אישור הגעה</th><th>צרכים מיוחדים</th><th>שולחן</th><th>פעולות</th></tr></thead>
+      <tbody id="guests-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TASKS ===== -->
+<div id="sec-tasks" class="section">
+  <div class="page-header">
+    <div><h1>משימות</h1><p>מעקב אחר כל המשימות עד לאירוע</p></div>
+    <div class="header-actions">
+      <select onchange="taskFilter=this.value;renderTasks()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;">
+        <option value="all">הכל</option><option value="pending">פתוח</option><option value="done">הושלם</option>
+      </select>
+      <button class="btn btn-info" onclick="triggerImport('tasks')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('tasks')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('taskModal')">+ הוסף משימה</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="task-stats"></div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>רשימת משימות</h3></div>
+      <div style="padding:0 14px;" id="tasks-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEATING ===== -->
+<div id="sec-seating" class="section">
+  <div class="page-header">
+    <div><h1>סידורי ישיבה</h1><p>שולחנות ושיבוץ אורחים</p></div>
+    <div class="header-actions">
+      <button class="btn btn-info" onclick="triggerImport('seating')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('seating')">📊 ייצוא Excel</button>
+      <button class="btn btn-outline" onclick="openModal('tableModal')">+ הוסף שולחן</button>
+      <button class="btn btn-gold" onclick="openModal('seatAssignModal')">🪑 שבץ אורח</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="seating-stats"></div>
+    <div class="seating-grid" id="seating-grid"></div>
+  </div>
+</div>
+
+<!-- ===== DJ ===== -->
+<div id="sec-dj" class="section">
+  <div class="page-header">
+    <div><h1>מוזיקה / DJ 🎵</h1><p>ניהול ספקי מוזיקה, DJ והגברה לאירוע</p></div>
+    <div class="header-actions">
+      <button class="btn btn-info" onclick="triggerImport('dj')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('dj')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('djModal')">+ הוסף ספק</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="dj-stats"></div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>ספקי מוזיקה / DJ</h3></div>
+      <table><thead><tr><th>ספק</th><th>סוג</th><th>טלפון</th><th>מחיר ₪</th><th>שעות שירות</th><th>ציוד הגברה?</th><th>שעת עוצר</th><th>סטטוס</th><th>הערות</th><th>פעולות</th></tr></thead>
+      <tbody id="dj-body"></tbody></table>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>⚙️ הגדרות מוזיקה</h3></div>
+      <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="dj-settings"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BAR ===== -->
+<div id="sec-bar" class="section">
+  <div class="page-header">
+    <div><h1>שירותי בר 🍸</h1><p>ניהול ספקי בר פסיבי ואקטיבי לאירוע</p></div>
+    <div class="header-actions">
+      <button class="btn btn-info" onclick="triggerImport('bar')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('bar')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('barModal')">+ הוסף ספק בר</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="bar-stats"></div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>ספקי בר</h3></div>
+      <table><thead><tr><th>ספק</th><th>סוג בר</th><th>טלפון</th><th>מחיר כולל ₪</th><th>שעות שירות</th><th>כולל שוטים?</th><th>סטטוס</th><th>הערות</th><th>פעולות</th></tr></thead>
+      <tbody id="bar-body"></tbody></table>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>⚙️ הגדרות בר</h3></div>
+      <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="bar-settings"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DISCO ===== -->
+<div id="sec-disco" class="section">
+  <div class="page-header">
+    <div><h1>דיסקו שקט 🎧</h1><p>ניהול ספקי דיסקו שקט לאחר עוצר רעש 23:00</p></div>
+    <div class="header-actions">
+      <button class="btn btn-info" onclick="triggerImport('disco')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('disco')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('discoModal')">+ הוסף ספק</button>
+    </div>
+  </div>
+  <div style="margin-top:22px;">
+    <div class="cards-row" id="disco-stats"></div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>ספקי דיסקו שקט</h3></div>
+      <table><thead><tr><th>ספק</th><th>טלפון</th><th>מחיר לאוזניה ₪</th><th>כמות אוזניות</th><th>עלות כוללת ₪</th><th>ערוצים</th><th>שעות שכירה</th><th>סטטוס</th><th>הערות</th><th>פעולות</th></tr></thead>
+      <tbody id="disco-body"></tbody></table>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>⚙️ הגדרות דיסקו שקט</h3></div>
+      <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="disco-settings"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ============================== MODALS ============================== -->
+
+<!-- VENDOR -->
+<div class="modal-overlay" id="vendorModal">
+  <div class="modal">
+    <h3>➕ ספק חדש</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם הספק</label><input type="text" id="v-name"/></div>
+      <div class="form-group"><label>קטגוריה</label>
+        <select id="v-cat"><option>אולם/גינה</option><option>קייטרינג</option><option>צילום</option><option>וידאו</option><option>מוזיקה / DJ</option><option>פרחים</option><option>תאורה</option><option>הגברה</option><option>בר</option><option>דיסקו שקט</option><option>אחר</option></select>
+      </div>
+      <div class="form-group"><label>סטטוס</label>
+        <select id="v-status"><option value="בחינה">בחינה</option><option value="מאושר">מאושר</option><option value="שולם">שולם</option><option value="נדחה">נדחה</option></select>
+      </div>
+      <div class="form-group"><label>איש קשר</label><input type="text" id="v-contact"/></div>
+      <div class="form-group"><label>טלפון</label><input type="tel" id="v-phone"/></div>
+      <div class="form-group"><label>מחיר מוסכם ₪</label><input type="number" id="v-price" placeholder="0"/></div>
+      <div class="form-group"><label>שולם עד כה ₪</label><input type="number" id="v-paid" placeholder="0"/></div>
+      <div class="form-group full"><label>הערות</label><textarea id="v-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('vendorModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveVendor()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUDGET -->
+<div class="modal-overlay" id="budgetModal">
+  <div class="modal">
+    <h3>➕ סעיף תקציבי</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>קטגוריה</label><input type="text" id="b-cat"/></div>
+      <div class="form-group"><label>תיאור</label><input type="text" id="b-desc"/></div>
+      <div class="form-group"><label>תקציב מתוכנן ₪</label><input type="number" id="b-planned" placeholder="0"/></div>
+      <div class="form-group"><label>בפועל ₪</label><input type="number" id="b-actual" placeholder="0"/></div>
+      <div class="form-group full"><label>סטטוס תשלום</label>
+        <select id="b-status"><option>לא שולם</option><option>שולם חלקית</option><option>שולם במלואו</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('budgetModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveBudget()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST -->
+<div class="modal-overlay" id="guestModal">
+  <div class="modal">
+    <h3>➕ אורח חדש</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם מלא</label><input type="text" id="g-name"/></div>
+      <div class="form-group"><label>קבוצה / צד</label>
+        <select id="g-group"><option>משפחת חתן</option><option>משפחת כלה</option><option>חברים של חתן</option><option>חברים של כלה</option><option>עמיתים</option><option>אחר</option></select>
+      </div>
+      <div class="form-group"><label>מספר מוזמנים</label><input type="number" id="g-count" value="1" min="1"/></div>
+      <div class="form-group"><label>אישור הגעה</label>
+        <select id="g-rsvp"><option value="ממתין">ממתין</option><option value="אישר">אישר הגעה</option><option value="ביטל">ביטל</option></select>
+      </div>
+      <div class="form-group"><label>שולחן</label><input type="text" id="g-table" placeholder="לדוגמה: שולחן 5"/></div>
+      <div class="form-group full"><label>צרכים מיוחדים</label><input type="text" id="g-notes" placeholder="צמחוני, ללא גלוטן..."/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('guestModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveGuest()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <h3>➕ משימה חדשה</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם המשימה</label><input type="text" id="t-name"/></div>
+      <div class="form-group"><label>קטגוריה</label>
+        <select id="t-cat"><option>אולם</option><option>ספקים</option><option>לוגיסטיקה</option><option>אישיים</option><option>תקציב</option><option>אורחים</option><option>אחר</option></select>
+      </div>
+      <div class="form-group"><label>תאריך יעד</label><input type="date" id="t-date"/></div>
+      <div class="form-group full"><label>עדיפות</label>
+        <select id="t-priority"><option value="גבוהה">גבוהה</option><option value="בינונית" selected>בינונית</option><option value="נמוכה">נמוכה</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('taskModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveTask()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="modal-overlay" id="tableModal">
+  <div class="modal">
+    <h3>➕ שולחן חדש</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>שם / מספר שולחן</label><input type="text" id="tb-name" placeholder="שולחן 1"/></div>
+      <div class="form-group"><label>מקומות ישיבה</label><input type="number" id="tb-seats" value="10" min="1"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('tableModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveTable()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEAT ASSIGN -->
+<div class="modal-overlay" id="seatAssignModal">
+  <div class="modal">
+    <h3>🪑 שיבוץ אורח לשולחן</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>בחר אורח</label><select id="sa-guest"></select></div>
+      <div class="form-group full"><label>שולחן</label><select id="sa-table"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('seatAssignModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="assignSeat()">שבץ</button>
+    </div>
+  </div>
+</div>
+
+<!-- DJ -->
+<div class="modal-overlay" id="djModal">
+  <div class="modal">
+    <h3>🎵 ספק מוזיקה / DJ חדש</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם הספק / DJ</label><input type="text" id="dj-name" placeholder="לדוגמה: DJ אברהם"/></div>
+      <div class="form-group"><label>סוג</label>
+        <select id="dj-type"><option>DJ</option><option>להקה חיה</option><option>DJ + להקה</option><option>הגברה בלבד</option><option>אחר</option></select>
+      </div>
+      <div class="form-group"><label>טלפון</label><input type="tel" id="dj-phone"/></div>
+      <div class="form-group"><label>מחיר ₪</label><input type="number" id="dj-price" placeholder="0"/></div>
+      <div class="form-group"><label>שעות שירות</label><input type="text" id="dj-hours" placeholder="18:00 – 23:00"/></div>
+      <div class="form-group"><label>שעת עוצר רעש</label><input type="time" id="dj-curfew" value="23:00"/></div>
+      <div class="form-group"><label>כולל ציוד הגברה?</label>
+        <select id="dj-sound"><option value="כן">כן</option><option value="לא">לא</option></select>
+      </div>
+      <div class="form-group"><label>סטטוס</label>
+        <select id="dj-status"><option>בבדיקה</option><option>מאושר</option><option>נדחה</option></select>
+      </div>
+      <div class="form-group full"><label>הערות / רפרטואר</label><textarea id="dj-notes" rows="2" placeholder="סגנון מוזיקה, דרישות טכניות..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('djModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveDJ()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- BAR -->
+<div class="modal-overlay" id="barModal">
+  <div class="modal">
+    <h3>🍸 ספק בר חדש</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם הספק</label><input type="text" id="br-name" placeholder="לדוגמה: Bono Bar"/></div>
+      <div class="form-group"><label>סוג בר</label>
+        <select id="br-type"><option>בר פסיבי</option><option>בר אקטיבי</option><option>שניהם</option></select>
+      </div>
+      <div class="form-group"><label>טלפון</label><input type="tel" id="br-phone"/></div>
+      <div class="form-group"><label>מחיר כולל ₪</label><input type="number" id="br-price" placeholder="0"/></div>
+      <div class="form-group"><label>שעות שירות</label><input type="text" id="br-hours" placeholder="18:00 – 23:00"/></div>
+      <div class="form-group"><label>כולל שוטים אקטיביים?</label>
+        <select id="br-shots"><option value="כן">כן</option><option value="לא">לא</option></select>
+      </div>
+      <div class="form-group full"><label>סטטוס</label>
+        <select id="br-status"><option>בבדיקה</option><option>מאושר</option><option>נדחה</option></select>
+      </div>
+      <div class="form-group full"><label>הערות</label><textarea id="br-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('barModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveBar()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- DISCO -->
+<div class="modal-overlay" id="discoModal">
+  <div class="modal">
+    <h3>🎧 ספק דיסקו שקט</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם הספק</label><input type="text" id="d-name" placeholder="לדוגמה: OZNIOT PARTY"/></div>
+      <div class="form-group"><label>טלפון</label><input type="tel" id="d-phone"/></div>
+      <div class="form-group"><label>מחיר לאוזניה ₪</label><input type="number" id="d-price" placeholder="0"/></div>
+      <div class="form-group"><label>כמות אוזניות</label><input type="number" id="d-qty" placeholder="120"/></div>
+      <div class="form-group"><label>מספר ערוצים</label><input type="number" id="d-channels" placeholder="3"/></div>
+      <div class="form-group"><label>שעות שכירה</label><input type="number" id="d-hours" placeholder="4"/></div>
+      <div class="form-group full"><label>סטטוס</label>
+        <select id="d-status"><option>בבדיקה</option><option>מאושר</option><option>נדחה</option></select>
+      </div>
+      <div class="form-group full"><label>הערות</label><textarea id="d-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('discoModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveDisco()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h3 id="import-title">📥 ייבוא נתונים מ-Excel</h3>
+    <div class="template-hint" id="import-hint"></div>
+    <div class="drop-zone" id="drop-zone"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="handleDrop(event)"
+         onclick="document.getElementById('file-input').click()">
+      <div class="dz-icon">📂</div>
+      <p>גרור קובץ Excel לכאן<br>או <strong>לחץ לבחירת קובץ</strong></p>
+      <p style="font-size:11px;margin-top:6px;color:var(--text-dim)">תומך בקבצי .xlsx ו-.xls</p>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="handleFileInput(event)"/>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-success" style="flex:1" onclick="downloadTemplate()">⬇️ הורד תבנית Excel ריקה</button>
+      <button class="btn btn-outline" onclick="closeModal('importModal')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="import-toast hidden" id="toast"></div>
+
+<!-- HIDDEN FILE INPUT (global) -->
+<input type="file" id="global-file-input" accept=".xlsx,.xls" style="display:none"/>
+
+<script>
+// ============================= DATA =============================
+const STORE_KEY = 'wedding_v3';
+function loadData() {
+  try { const r = localStorage.getItem(STORE_KEY); if(r) return JSON.parse(r); } catch(e){}
+  return {
+    vendors:[
+      {id:1,name:'וילה נונה - קיסריה',cat:'אולם/גינה',contact:'',phone:'',price:65000,paid:0,status:'בחינה',notes:'גינה חיצונית, עד 120 אורחים'}
+    ],
+    budget:[
+      {id:1,cat:'אולם',desc:'שכירת גינה + קייטרינג',planned:90000,actual:0,status:'לא שולם'},
+      {id:2,cat:'צילום ווידאו',desc:'',planned:12000,actual:0,status:'לא שולם'},
+      {id:3,cat:'מוזיקה / DJ',desc:'',planned:8000,actual:0,status:'לא שולם'},
+      {id:4,cat:'פרחים ועיצוב',desc:'',planned:10000,actual:0,status:'לא שולם'},
+      {id:5,cat:'בר',desc:'בר פסיבי + אקטיבי',planned:7500,actual:0,status:'לא שולם'},
+      {id:6,cat:'דיסקו שקט',desc:'120 אוזניות 4 שעות',planned:5000,actual:0,status:'לא שולם'},
+    ],
+    guests:[],
+    tasks:[
+      {id:1,name:'סיור באולמות מועמדים',cat:'אולם',date:'2025-02-28',priority:'גבוהה',done:false},
+      {id:2,name:'קבלת הצעות מחיר מ-3 ספקי דיסקו שקט',cat:'ספקים',date:'2025-03-10',priority:'גבוהה',done:false},
+      {id:3,name:'שליחת הזמנות',cat:'אורחים',date:'2025-04-01',priority:'גבוהה',done:false},
+      {id:4,name:'אישור תפריט קייטרינג',cat:'ספקים',date:'2025-03-20',priority:'בינונית',done:false},
+    ],
+    tables:[],
+    bar:[
+      {id:1,name:'Bono Bar',type:'בר אקטיבי',phone:'',price:6000,hours:'18:00 – 23:00',shots:'כן',status:'בבדיקה',notes:'שירות שוט אקטיבי בריקוד'},
+      {id:2,name:'Ultra Bar',type:'בר פסיבי',phone:'',price:4500,hours:'17:00 – 23:00',shots:'לא',status:'בבדיקה',notes:''},
+    ],
+    disco:[
+      {id:1,name:'OZNIOT PARTY',phone:'',price:35,qty:120,channels:3,hours:4,status:'בבדיקה',notes:'35 ₪ לאוזניה, 3 ערוצים'},
+      {id:2,name:'Master Sale',phone:'',price:9,qty:120,channels:2,hours:4,status:'בבדיקה',notes:'9 ₪ לאוזניה - חסכוני'},
+    ],
+    dj:[
+      {id:1,name:'DJ לדוגמה',type:'DJ',phone:'',price:8000,hours:'18:00 – 23:00',curfew:'23:00',sound:'כן',status:'בבדיקה',notes:'סגנון: ים תיכוני, אנגלית'}
+    ],
+    djSettings:{budget:8000,startTime:'18:00',curfewTime:'23:00',guestCount:120},
+    barSettings:{budget:7500,startTime:'17:00',endTime:'23:00',guestCount:120},
+    discoSettings:{budget:5000,curfew:'23:00',guestCount:120}
+  };
+}
+function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+let db = loadData();
+let editingId = null;
+let taskFilter = 'all';
+let importTarget = null;
+
+// ============================= NAV =============================
+function showSection(name, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  renderAll();
+}
+
+// ============================= COUNTDOWN =============================
+function updateCountdown(){
+  const w=new Date('2025-05-20'), t=new Date(); t.setHours(0,0,0,0);
+  const d=Math.ceil((w-t)/(1000*60*60*24));
+  document.getElementById('daysLeft').textContent = d>0?d:'🎉';
+}
+
+// ============================= HELPERS =============================
+function fmt(n){ return (n||0).toLocaleString('he-IL'); }
+function badge(s){
+  const m={'מאושר':'badge-green','שולם':'badge-green','שולם במלואו':'badge-green','אישר':'badge-green',
+    'בחינה':'badge-yellow','בבדיקה':'badge-yellow','ממתין':'badge-yellow','שולם חלקית':'badge-yellow','בינונית':'badge-yellow',
+    'נדחה':'badge-red','ביטל':'badge-red','גבוהה':'badge-red',
+    'לא שולם':'badge-gray','נמוכה':'badge-blue'};
+  return `<span class="badge ${m[s]||'badge-gray'}">${s}</span>`;
+}
+function actionBtns(editFn, deleteCollection, id){
+  return `<div style="display:flex;gap:5px">
+    <button class="btn btn-outline btn-sm" onclick="${editFn}(${id})">✏️</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteItem('${deleteCollection}',${id})">🗑</button>
+  </div>`;
+}
+
+// ============================= RENDER ALL =============================
+function renderAll(){
+  renderOverview(); renderVendors(); renderBudget(); renderGuests();
+  renderTasks(); renderSeating(); renderDJ(); renderBar(); renderDisco();
+}
+
+// ============================= DJ =============================
+function renderDJ(){
+  const s=db.djSettings;
+  const approved=db.dj.filter(d=>d.status==='מאושר');
+  document.getElementById('dj-stats').innerHTML=`
+    <div class="stat-card"><div class="label">ספקים בבדיקה</div><div class="value">${db.dj.length}</div></div>
+    <div class="stat-card"><div class="label">מאושרים</div><div class="value" style="color:var(--success)">${approved.length}</div></div>
+    <div class="stat-card"><div class="label">תקציב מוזיקה</div><div class="value">₪${fmt(s.budget)}</div><div class="sub">עוצר: ${s.curfewTime}</div></div>
+    <div class="stat-card"><div class="label">שעות שירות</div><div class="value" style="font-size:18px">${s.startTime} – ${s.curfewTime}</div></div>`;
+  document.getElementById('dj-body').innerHTML=db.dj.length?db.dj.map(d=>`
+    <tr><td><strong>${d.name}</strong></td><td>${d.type}</td><td>${d.phone||'–'}</td>
+    <td>₪${fmt(d.price)}</td><td>${d.hours||'–'}</td>
+    <td>${d.sound==='כן'?'<span style="color:var(--success)">✔ כן</span>':'<span style="color:var(--text-dim)">✘ לא</span>'}</td>
+    <td>${d.curfew||'–'}</td><td>${badge(d.status)}</td>
+    <td style="color:var(--text-dim)">${d.notes||'–'}</td>
+    <td>${actionBtns('editDJ','dj',d.id)}</td></tr>`).join('')
+    :`<tr><td colspan="10"><div class="empty-state"><div class="icon">🎵</div><p>אין ספקי מוזיקה</p></div></td></tr>`;
+  document.getElementById('dj-settings').innerHTML=`
+    <div class="form-group"><label>תקציב מוזיקה ₪</label><input type="number" value="${s.budget}" onchange="db.djSettings.budget=+this.value;saveData();renderDJ()"/></div>
+    <div class="form-group"><label>מספר אורחים</label><input type="number" value="${s.guestCount}" onchange="db.djSettings.guestCount=+this.value;saveData();renderDJ()"/></div>
+    <div class="form-group"><label>שעת התחלה</label><input type="time" value="${s.startTime}" onchange="db.djSettings.startTime=this.value;saveData();renderDJ()"/></div>
+    <div class="form-group"><label>שעת עוצר רעש</label><input type="time" value="${s.curfewTime}" onchange="db.djSettings.curfewTime=this.value;saveData();renderDJ()"/></div>`;
+}
+function editDJ(id){
+  const d=db.dj.find(x=>x.id===id); if(!d)return; editingId=id;
+  document.getElementById('dj-name').value=d.name; document.getElementById('dj-type').value=d.type;
+  document.getElementById('dj-phone').value=d.phone||''; document.getElementById('dj-price').value=d.price||0;
+  document.getElementById('dj-hours').value=d.hours||''; document.getElementById('dj-curfew').value=d.curfew||'23:00';
+  document.getElementById('dj-sound').value=d.sound||'כן'; document.getElementById('dj-status').value=d.status;
+  document.getElementById('dj-notes').value=d.notes||''; openModal('djModal');
+}
+function saveDJ(){
+  const obj={name:document.getElementById('dj-name').value.trim(),type:document.getElementById('dj-type').value,
+    phone:document.getElementById('dj-phone').value.trim(),price:+document.getElementById('dj-price').value||0,
+    hours:document.getElementById('dj-hours').value.trim(),curfew:document.getElementById('dj-curfew').value,
+    sound:document.getElementById('dj-sound').value,status:document.getElementById('dj-status').value,
+    notes:document.getElementById('dj-notes').value.trim()};
+  if(!obj.name)return alert('נא להזין שם');
+  if(editingId){Object.assign(db.dj.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.dj.push(obj);}
+  saveData();closeModal('djModal');renderDJ();
+}
+
+// ============================= OVERVIEW =============================
+function renderOverview(){
+  const totalB=db.budget.reduce((s,b)=>s+Number(b.planned),0);
+  const totalA=db.budget.reduce((s,b)=>s+Number(b.actual),0);
+  const totalG=db.guests.reduce((s,g)=>s+Number(g.count),0);
+  const conf=db.guests.filter(g=>g.rsvp==='אישר').reduce((s,g)=>s+Number(g.count),0);
+  const done=db.tasks.filter(t=>t.done).length;
+  const vOk=db.vendors.filter(v=>v.status==='מאושר'||v.status==='שולם').length;
+  document.getElementById('ov-stats').innerHTML=`
+    <div class="stat-card"><div class="label">תקציב כולל</div><div class="value">₪${fmt(totalB)}</div><div class="sub">בפועל: ₪${fmt(totalA)}</div></div>
+    <div class="stat-card"><div class="label">אורחים</div><div class="value">${totalG}</div><div class="sub">אישרו: ${conf}</div></div>
+    <div class="stat-card"><div class="label">משימות</div><div class="value">${done}/${db.tasks.length}</div><div class="sub">הושלמו</div></div>
+    <div class="stat-card"><div class="label">ספקים מאושרים</div><div class="value">${vOk}/${db.vendors.length}</div></div>`;
+  const up=db.tasks.filter(t=>!t.done).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,5);
+  document.getElementById('ov-tasks').innerHTML=up.length?up.map(t=>`<div class="ov-row"><span>${t.name}</span><span style="color:var(--text-dim);font-size:11px">${t.date||''}</span></div>`).join(''):'<div style="padding:12px;color:var(--text-dim);font-size:13px">אין משימות פתוחות 🎉</div>';
+  const pv=db.vendors.filter(v=>v.status==='בחינה');
+  document.getElementById('ov-vendors').innerHTML=pv.length?pv.map(v=>`<div class="ov-row"><span>${v.name}</span><span style="color:var(--text-dim);font-size:11px">${v.cat}</span></div>`).join(''):'<div style="padding:12px;color:var(--text-dim);font-size:13px">כל הספקים מאושרים 🎉</div>';
+  document.getElementById('ov-budget').innerHTML=db.budget.slice(0,6).map(b=>{
+    const pct=b.planned>0?Math.min(100,Math.round(b.actual/b.planned*100)):0;
+    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>${b.cat}</span><span style="color:var(--text-dim)">₪${fmt(b.actual)}/₪${fmt(b.planned)}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+  const pg=db.guests.filter(g=>g.rsvp==='ממתין');
+  document.getElementById('ov-guests').innerHTML=pg.length?pg.slice(0,6).map(g=>`<div class="ov-row"><span>${g.name}</span><span style="color:var(--text-dim);font-size:11px">${g.group}</span></div>`).join(''):'<div style="padding:12px;color:var(--text-dim);font-size:13px">כל האורחים ענו 🎉</div>';
+}
+
+// ============================= VENDORS =============================
+function renderVendors(){
+  const q=(document.getElementById('vendor-search')||{}).value||'';
+  const list=db.vendors.filter(v=>!q||v.name.includes(q)||v.cat.includes(q));
+  document.getElementById('vendors-body').innerHTML=list.length?list.map(v=>`
+    <tr><td><strong>${v.name}</strong>${v.notes?`<br><small style="color:var(--text-dim)">${v.notes}</small>`:''}</td>
+    <td>${v.cat}</td><td>${v.contact||'–'}</td><td>${v.phone||'–'}</td>
+    <td>₪${fmt(v.price)}</td><td>₪${fmt(v.paid)}</td>
+    <td>${badge(v.status)}</td><td>${actionBtns('editVendor','vendors',v.id)}</td></tr>`).join('')
+    :`<tr><td colspan="8"><div class="empty-state"><div class="icon">🏢</div><p>אין ספקים</p></div></td></tr>`;
+}
+function editVendor(id){
+  const v=db.vendors.find(x=>x.id===id); if(!v)return; editingId=id;
+  document.getElementById('v-name').value=v.name;
+  document.getElementById('v-cat').value=v.cat;
+  document.getElementById('v-contact').value=v.contact||'';
+  document.getElementById('v-phone').value=v.phone||'';
+  document.getElementById('v-price').value=v.price||0;
+  document.getElementById('v-paid').value=v.paid||0;
+  document.getElementById('v-status').value=v.status;
+  document.getElementById('v-notes').value=v.notes||'';
+  openModal('vendorModal');
+}
+function saveVendor(){
+  const obj={name:document.getElementById('v-name').value.trim(),cat:document.getElementById('v-cat').value,
+    contact:document.getElementById('v-contact').value.trim(),phone:document.getElementById('v-phone').value.trim(),
+    price:+document.getElementById('v-price').value||0,paid:+document.getElementById('v-paid').value||0,
+    status:document.getElementById('v-status').value,notes:document.getElementById('v-notes').value.trim()};
+  if(!obj.name)return alert('נא להזין שם ספק');
+  if(editingId){Object.assign(db.vendors.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.vendors.push(obj);}
+  saveData();closeModal('vendorModal');renderVendors();renderOverview();
+}
+
+// ============================= BUDGET =============================
+function renderBudget(){
+  const tp=db.budget.reduce((s,b)=>s+Number(b.planned),0);
+  const ta=db.budget.reduce((s,b)=>s+Number(b.actual),0);
+  const d=tp-ta;
+  document.getElementById('budget-totals').innerHTML=`
+    <div class="stat-card"><div class="label">תקציב מתוכנן</div><div class="value">₪${fmt(tp)}</div></div>
+    <div class="stat-card"><div class="label">הוצא בפועל</div><div class="value">₪${fmt(ta)}</div></div>
+    <div class="stat-card"><div class="label">יתרה</div><div class="value" style="color:${d>=0?'var(--success)':'var(--danger)'}">₪${fmt(Math.abs(d))} ${d>=0?'✔':'⚠️'}</div></div>`;
+  document.getElementById('budget-body').innerHTML=db.budget.length?db.budget.map(b=>{
+    const diff=Number(b.planned)-Number(b.actual);
+    return `<tr><td><strong>${b.cat}</strong></td><td style="color:var(--text-dim)">${b.desc||'–'}</td>
+    <td>₪${fmt(b.planned)}</td><td>₪${fmt(b.actual)}</td>
+    <td style="color:${diff>=0?'var(--success)':'var(--danger)'}">${diff>=0?'+':'-'}₪${fmt(Math.abs(diff))}</td>
+    <td>${badge(b.status)}</td><td>${actionBtns('editBudget','budget',b.id)}</td></tr>`;
+  }).join(''):`<tr><td colspan="7"><div class="empty-state"><div class="icon">💰</div><p>אין סעיפים</p></div></td></tr>`;
+}
+function editBudget(id){
+  const b=db.budget.find(x=>x.id===id); if(!b)return; editingId=id;
+  document.getElementById('b-cat').value=b.cat; document.getElementById('b-desc').value=b.desc||'';
+  document.getElementById('b-planned').value=b.planned||0; document.getElementById('b-actual').value=b.actual||0;
+  document.getElementById('b-status').value=b.status; openModal('budgetModal');
+}
+function saveBudget(){
+  const obj={cat:document.getElementById('b-cat').value.trim(),desc:document.getElementById('b-desc').value.trim(),
+    planned:+document.getElementById('b-planned').value||0,actual:+document.getElementById('b-actual').value||0,
+    status:document.getElementById('b-status').value};
+  if(!obj.cat)return alert('נא להזין קטגוריה');
+  if(editingId){Object.assign(db.budget.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.budget.push(obj);}
+  saveData();closeModal('budgetModal');renderBudget();renderOverview();
+}
+
+// ============================= GUESTS =============================
+function renderGuests(){
+  const q=(document.getElementById('guest-search')||{}).value||'';
+  const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q));
+  const total=db.guests.reduce((s,g)=>s+Number(g.count),0);
+  const conf=db.guests.filter(g=>g.rsvp==='אישר').reduce((s,g)=>s+Number(g.count),0);
+  const pend=db.guests.filter(g=>g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
+  const canc=db.guests.filter(g=>g.rsvp==='ביטל').reduce((s,g)=>s+Number(g.count),0);
+  document.getElementById('guest-stats').innerHTML=`
+    <div class="stat-card"><div class="label">סה"כ מוזמנים</div><div class="value">${total}</div></div>
+    <div class="stat-card"><div class="label">אישרו הגעה</div><div class="value" style="color:var(--success)">${conf}</div></div>
+    <div class="stat-card"><div class="label">ממתינים</div><div class="value" style="color:var(--gold)">${pend}</div></div>
+    <div class="stat-card"><div class="label">ביטלו</div><div class="value" style="color:var(--danger)">${canc}</div></div>`;
+  document.getElementById('guests-body').innerHTML=list.length?list.map(g=>`
+    <tr><td><strong>${g.name}</strong></td><td>${g.group}</td><td>${g.count}</td>
+    <td>${badge(g.rsvp)}</td><td style="color:var(--text-dim)">${g.notes||'–'}</td>
+    <td>${g.table||'–'}</td><td>${actionBtns('editGuest','guests',g.id)}</td></tr>`).join('')
+    :`<tr><td colspan="7"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
+}
+function editGuest(id){
+  const g=db.guests.find(x=>x.id===id); if(!g)return; editingId=id;
+  document.getElementById('g-name').value=g.name; document.getElementById('g-group').value=g.group;
+  document.getElementById('g-count').value=g.count; document.getElementById('g-rsvp').value=g.rsvp;
+  document.getElementById('g-table').value=g.table||''; document.getElementById('g-notes').value=g.notes||'';
+  openModal('guestModal');
+}
+function saveGuest(){
+  const obj={name:document.getElementById('g-name').value.trim(),group:document.getElementById('g-group').value,
+    count:+document.getElementById('g-count').value||1,rsvp:document.getElementById('g-rsvp').value,
+    table:document.getElementById('g-table').value.trim(),notes:document.getElementById('g-notes').value.trim()};
+  if(!obj.name)return alert('נא להזין שם');
+  if(editingId){Object.assign(db.guests.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.guests.push(obj);}
+  saveData();closeModal('guestModal');renderGuests();renderOverview();renderSeating();
+}
+
+// ============================= TASKS =============================
+function renderTasks(){
+  let list=db.tasks;
+  if(taskFilter==='pending')list=list.filter(t=>!t.done);
+  if(taskFilter==='done')list=list.filter(t=>t.done);
+  list=[...list].sort((a,b)=>{if(a.done!==b.done)return a.done?1:-1;return new Date(a.date)-new Date(b.date);});
+  const done=db.tasks.filter(t=>t.done).length;
+  document.getElementById('task-stats').innerHTML=`
+    <div class="stat-card"><div class="label">סה"כ</div><div class="value">${db.tasks.length}</div></div>
+    <div class="stat-card"><div class="label">הושלמו</div><div class="value" style="color:var(--success)">${done}</div></div>
+    <div class="stat-card"><div class="label">פתוחות</div><div class="value" style="color:var(--gold)">${db.tasks.length-done}</div></div>`;
+  document.getElementById('tasks-list').innerHTML=list.length?list.map(t=>`
+    <div class="timeline-item">
+      <div class="timeline-dot ${t.done?'done':''}" onclick="toggleTask(${t.id})"></div>
+      <div class="task-text">
+        <div class="task-name ${t.done?'done':''}">${t.name}</div>
+        <div class="task-date">${t.cat}${t.date?' | '+t.date:''}${t.priority?' | עדיפות: '+t.priority:''}</div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">${actionBtns('editTask','tasks',t.id)}</div>
+    </div>`).join(''):`<div class="empty-state"><div class="icon">✅</div><p>אין משימות</p></div>`;
+}
+function toggleTask(id){const t=db.tasks.find(x=>x.id===id);if(t){t.done=!t.done;saveData();renderTasks();renderOverview();}}
+function editTask(id){
+  const t=db.tasks.find(x=>x.id===id); if(!t)return; editingId=id;
+  document.getElementById('t-name').value=t.name; document.getElementById('t-cat').value=t.cat;
+  document.getElementById('t-date').value=t.date||''; document.getElementById('t-priority').value=t.priority||'בינונית';
+  openModal('taskModal');
+}
+function saveTask(){
+  const obj={name:document.getElementById('t-name').value.trim(),cat:document.getElementById('t-cat').value,
+    date:document.getElementById('t-date').value,priority:document.getElementById('t-priority').value,done:false};
+  if(!obj.name)return alert('נא להזין שם משימה');
+  if(editingId){const ex=db.tasks.find(x=>x.id===editingId);obj.done=ex.done;Object.assign(ex,obj);}
+  else{obj.id=Date.now();db.tasks.push(obj);}
+  saveData();closeModal('taskModal');renderTasks();renderOverview();
+}
+
+// ============================= SEATING =============================
+function renderSeating(){
+  const total=db.tables.reduce((s,t)=>s+Number(t.seats),0);
+  const assigned=db.guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
+  document.getElementById('seating-stats').innerHTML=`
+    <div class="stat-card"><div class="label">שולחנות</div><div class="value">${db.tables.length}</div></div>
+    <div class="stat-card"><div class="label">מקומות ישיבה</div><div class="value">${total}</div></div>
+    <div class="stat-card"><div class="label">משובצים</div><div class="value">${assigned}</div></div>
+    <div class="stat-card"><div class="label">פנויים</div><div class="value" style="color:var(--gold)">${total-assigned}</div></div>`;
+  const g=document.getElementById('seating-grid');
+  if(!db.tables.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;return;}
+  g.innerHTML=db.tables.map(t=>{
+    const seated=db.guests.filter(g=>g.table===t.name);
+    const cnt=seated.reduce((s,g)=>s+Number(g.count),0);
+    return `<div class="table-block">
+      <div class="table-name">🪑 ${t.name}</div>
+      <div class="seats-list">${seated.map(g=>`<span class="seat-chip filled">${g.name}</span>`).join('')}
+      ${Array.from({length:Math.max(0,Number(t.seats)-cnt)}).map(()=>`<span class="seat-chip">פנוי</span>`).join('')}</div>
+      <div class="table-count">${cnt} / ${t.seats} מקומות</div>
+    </div>`;
+  }).join('');
+}
+function saveTable(){
+  const name=document.getElementById('tb-name').value.trim();
+  const seats=+document.getElementById('tb-seats').value||10;
+  if(!name)return alert('נא להזין שם שולחן');
+  db.tables.push({id:Date.now(),name,seats});
+  saveData();closeModal('tableModal');renderSeating();
+}
+function assignSeat(){
+  const gid=+document.getElementById('sa-guest').value;
+  const tbl=document.getElementById('sa-table').value;
+  const g=db.guests.find(x=>x.id===gid);
+  if(g){g.table=tbl;saveData();closeModal('seatAssignModal');renderSeating();renderGuests();}
+}
+function openSeatAssignModal(){
+  document.getElementById('sa-guest').innerHTML=db.guests.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  document.getElementById('sa-table').innerHTML=db.tables.map(t=>`<option>${t.name}</option>`).join('');
+  openModal('seatAssignModal');
+}
+
+// ============================= BAR =============================
+function renderBar(){
+  const s=db.barSettings;
+  const approved=db.bar.filter(b=>b.status==='מאושר');
+  const totalCost=approved.reduce((sum,b)=>sum+Number(b.price),0);
+  document.getElementById('bar-stats').innerHTML=`
+    <div class="stat-card"><div class="label">ספקים בבדיקה</div><div class="value">${db.bar.length}</div></div>
+    <div class="stat-card"><div class="label">מאושרים</div><div class="value" style="color:var(--success)">${approved.length}</div></div>
+    <div class="stat-card"><div class="label">עלות מאושרת ₪</div><div class="value">₪${fmt(totalCost)}</div><div class="sub">תקציב: ₪${fmt(s.budget)}</div></div>
+    <div class="stat-card"><div class="label">שעות שירות</div><div class="value" style="font-size:18px">${s.startTime} – ${s.endTime}</div></div>`;
+  document.getElementById('bar-body').innerHTML=db.bar.length?db.bar.map(b=>`
+    <tr><td><strong>${b.name}</strong></td><td>${b.type}</td><td>${b.phone||'–'}</td>
+    <td>₪${fmt(b.price)}</td><td>${b.hours||'–'}</td>
+    <td>${b.shots==='כן'?'<span style="color:var(--success)">✔ כן</span>':'<span style="color:var(--text-dim)">✘ לא</span>'}</td>
+    <td>${badge(b.status)}</td><td style="color:var(--text-dim)">${b.notes||'–'}</td>
+    <td>${actionBtns('editBar','bar',b.id)}</td></tr>`).join('')
+    :`<tr><td colspan="9"><div class="empty-state"><div class="icon">🍸</div><p>אין ספקי בר</p></div></td></tr>`;
+  document.getElementById('bar-settings').innerHTML=`
+    <div class="form-group"><label>תקציב בר ₪</label><input type="number" value="${s.budget}" onchange="db.barSettings.budget=+this.value;saveData();renderBar()"/></div>
+    <div class="form-group"><label>מספר אורחים</label><input type="number" value="${s.guestCount}" onchange="db.barSettings.guestCount=+this.value;saveData();renderBar()"/></div>
+    <div class="form-group"><label>שעת התחלה</label><input type="time" value="${s.startTime}" onchange="db.barSettings.startTime=this.value;saveData();renderBar()"/></div>
+    <div class="form-group"><label>שעת סיום</label><input type="time" value="${s.endTime}" onchange="db.barSettings.endTime=this.value;saveData();renderBar()"/></div>`;
+}
+function editBar(id){
+  const b=db.bar.find(x=>x.id===id); if(!b)return; editingId=id;
+  document.getElementById('br-name').value=b.name; document.getElementById('br-type').value=b.type;
+  document.getElementById('br-phone').value=b.phone||''; document.getElementById('br-price').value=b.price||0;
+  document.getElementById('br-hours').value=b.hours||''; document.getElementById('br-shots').value=b.shots||'לא';
+  document.getElementById('br-status').value=b.status; document.getElementById('br-notes').value=b.notes||'';
+  openModal('barModal');
+}
+function saveBar(){
+  const obj={name:document.getElementById('br-name').value.trim(),type:document.getElementById('br-type').value,
+    phone:document.getElementById('br-phone').value.trim(),price:+document.getElementById('br-price').value||0,
+    hours:document.getElementById('br-hours').value.trim(),shots:document.getElementById('br-shots').value,
+    status:document.getElementById('br-status').value,notes:document.getElementById('br-notes').value.trim()};
+  if(!obj.name)return alert('נא להזין שם');
+  if(editingId){Object.assign(db.bar.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.bar.push(obj);}
+  saveData();closeModal('barModal');renderBar();
+}
+
+// ============================= DISCO =============================
+function renderDisco(){
+  const s=db.discoSettings;
+  const approved=db.disco.filter(d=>d.status==='מאושר');
+  const cheapest=db.disco.length?Math.min(...db.disco.map(d=>d.price*d.qty)):0;
+  const expensive=db.disco.length?Math.max(...db.disco.map(d=>d.price*d.qty)):0;
+  document.getElementById('disco-stats').innerHTML=`
+    <div class="stat-card"><div class="label">ספקים בבדיקה</div><div class="value">${db.disco.length}</div></div>
+    <div class="stat-card"><div class="label">מאושרים</div><div class="value" style="color:var(--success)">${approved.length}</div></div>
+    <div class="stat-card"><div class="label">טווח עלויות</div><div class="value" style="font-size:16px">₪${fmt(cheapest)} – ₪${fmt(expensive)}</div><div class="sub">תקציב: ₪${fmt(s.budget)}</div></div>
+    <div class="stat-card"><div class="label">עוצר רעש</div><div class="value" style="font-size:20px">${s.curfew}</div></div>`;
+  document.getElementById('disco-body').innerHTML=db.disco.length?db.disco.map(d=>{
+    const total=Number(d.price)*Number(d.qty);
+    return `<tr><td><strong>${d.name}</strong></td><td>${d.phone||'–'}</td>
+    <td>₪${fmt(d.price)}</td><td>${d.qty}</td><td>₪${fmt(total)}</td>
+    <td>${d.channels||'–'}</td><td>${d.hours||'–'} שע'</td>
+    <td>${badge(d.status)}</td><td style="color:var(--text-dim)">${d.notes||'–'}</td>
+    <td>${actionBtns('editDisco','disco',d.id)}</td></tr>`;
+  }).join(''):`<tr><td colspan="10"><div class="empty-state"><div class="icon">🎧</div><p>אין ספקי דיסקו שקט</p></div></td></tr>`;
+  document.getElementById('disco-settings').innerHTML=`
+    <div class="form-group"><label>תקציב דיסקו שקט ₪</label><input type="number" value="${s.budget}" onchange="db.discoSettings.budget=+this.value;saveData();renderDisco()"/></div>
+    <div class="form-group"><label>מספר אורחים</label><input type="number" value="${s.guestCount}" onchange="db.discoSettings.guestCount=+this.value;saveData();renderDisco()"/></div>
+    <div class="form-group"><label>שעת עוצר רעש</label><input type="time" value="${s.curfew}" onchange="db.discoSettings.curfew=this.value;saveData();renderDisco()"/></div>`;
+}
+function editDisco(id){
+  const d=db.disco.find(x=>x.id===id); if(!d)return; editingId=id;
+  document.getElementById('d-name').value=d.name; document.getElementById('d-phone').value=d.phone||'';
+  document.getElementById('d-price').value=d.price||0; document.getElementById('d-qty').value=d.qty||120;
+  document.getElementById('d-channels').value=d.channels||3; document.getElementById('d-hours').value=d.hours||4;
+  document.getElementById('d-status').value=d.status; document.getElementById('d-notes').value=d.notes||'';
+  openModal('discoModal');
+}
+function saveDisco(){
+  const obj={name:document.getElementById('d-name').value.trim(),phone:document.getElementById('d-phone').value.trim(),
+    price:+document.getElementById('d-price').value||0,qty:+document.getElementById('d-qty').value||120,
+    channels:+document.getElementById('d-channels').value||3,hours:+document.getElementById('d-hours').value||4,
+    status:document.getElementById('d-status').value,notes:document.getElementById('d-notes').value.trim()};
+  if(!obj.name)return alert('נא להזין שם');
+  if(editingId){Object.assign(db.disco.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.disco.push(obj);}
+  saveData();closeModal('discoModal');renderDisco();
+}
+
+// ============================= DELETE =============================
+function deleteItem(col,id){
+  if(!confirm('למחוק פריט זה?'))return;
+  db[col]=db[col].filter(x=>x.id!==id);
+  saveData();renderAll();
+}
+
+// ============================= MODAL =============================
+function openModal(id){
+  if(id==='seatAssignModal'){openSeatAssignModal();return;}
+  if(!editingId){
+    document.querySelectorAll(`#${id} input, #${id} textarea`).forEach(el=>{
+      if(el.type==='number')el.value=el.placeholder||'';
+      else if(el.type!=='date'&&el.type!=='time')el.value='';
+    });
+  }
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');editingId=null;}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);});
+});
+
+// ============================= TOAST =============================
+function showToast(msg, type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`import-toast ${type}`;
+  setTimeout(()=>t.classList.add('hidden'),3000);
+}
+
+// ============================= EXCEL IMPORT =============================
+const IMPORT_SCHEMAS = {
+  dj:{
+    title:'📥 ייבוא ספקי מוזיקה / DJ',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">שם</span><span class="col-pill">סוג</span>
+      <span class="col-pill">טלפון</span><span class="col-pill">מחיר</span>
+      <span class="col-pill">שעות שירות</span><span class="col-pill">עוצר</span>
+      <span class="col-pill">הגברה</span><span class="col-pill">סטטוס</span><span class="col-pill">הערות</span><br>
+      <em>סוג: DJ / להקה חיה / DJ + להקה / הגברה בלבד | הגברה: כן / לא</em>`,
+    template:[['שם','סוג','טלפון','מחיר','שעות שירות','עוצר','הגברה','סטטוס','הערות'],
+              ['DJ אברהם','DJ','050-1234567',8000,'18:00–23:00','23:00','כן','בבדיקה','ים תיכוני + אנגלית']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['שם']||'',type:row['סוג']||'DJ',phone:String(row['טלפון']||''),
+      price:+row['מחיר']||0,hours:row['שעות שירות']||'',curfew:row['עוצר']||'23:00',
+      sound:row['הגברה']||'כן',status:row['סטטוס']||'בבדיקה',notes:row['הערות']||''}),
+    validate:(r)=>r['שם'],
+    collection:'dj'
+  },
+  vendors:{
+    title:'📥 ייבוא ספקים',
+    hint:`<strong>עמודות נדרשות בקובץ Excel:</strong><br>
+      <span class="col-pill">שם</span><span class="col-pill">קטגוריה</span><span class="col-pill">איש קשר</span>
+      <span class="col-pill">טלפון</span><span class="col-pill">מחיר</span><span class="col-pill">שולם</span>
+      <span class="col-pill">סטטוס</span><span class="col-pill">הערות</span><br>
+      <em>סטטוס אפשרי: בחינה / מאושר / שולם / נדחה</em>`,
+    template:[['שם','קטגוריה','איש קשר','טלפון','מחיר','שולם','סטטוס','הערות'],
+              ['לדוגמה: צלם X','צילום','ישראל ישראלי','050-1234567',12000,0,'בחינה','']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['שם']||'',cat:row['קטגוריה']||'אחר',contact:row['איש קשר']||'',
+      phone:String(row['טלפון']||''),price:+row['מחיר']||0,paid:+row['שולם']||0,
+      status:row['סטטוס']||'בחינה',notes:row['הערות']||''}),
+    validate:(r)=>r['שם'],
+    collection:'vendors'
+  },
+  budget:{
+    title:'📥 ייבוא תקציב',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">קטגוריה</span><span class="col-pill">תיאור</span>
+      <span class="col-pill">תקציב</span><span class="col-pill">בפועל</span><span class="col-pill">סטטוס</span>`,
+    template:[['קטגוריה','תיאור','תקציב','בפועל','סטטוס'],
+              ['צילום','כולל אלבום',12000,0,'לא שולם']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      cat:row['קטגוריה']||'',desc:row['תיאור']||'',
+      planned:+row['תקציב']||0,actual:+row['בפועל']||0,status:row['סטטוס']||'לא שולם'}),
+    validate:(r)=>r['קטגוריה'],
+    collection:'budget'
+  },
+  guests:{
+    title:'📥 ייבוא אורחים',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">שם</span><span class="col-pill">קבוצה</span>
+      <span class="col-pill">מוזמנים</span><span class="col-pill">אישור הגעה</span>
+      <span class="col-pill">צרכים מיוחדים</span><span class="col-pill">שולחן</span><br>
+      <em>אישור הגעה: אישר / ממתין / ביטל</em>`,
+    template:[['שם','קבוצה','מוזמנים','אישור הגעה','צרכים מיוחדים','שולחן'],
+              ['ישראל ישראלי','משפחת חתן',2,'ממתין','','']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['שם']||'',group:row['קבוצה']||'אחר',count:+row['מוזמנים']||1,
+      rsvp:row['אישור הגעה']||'ממתין',notes:row['צרכים מיוחדים']||'',table:row['שולחן']||''}),
+    validate:(r)=>r['שם'],
+    collection:'guests'
+  },
+  tasks:{
+    title:'📥 ייבוא משימות',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">משימה</span><span class="col-pill">קטגוריה</span>
+      <span class="col-pill">תאריך</span><span class="col-pill">עדיפות</span><br>
+      <em>עדיפות: גבוהה / בינונית / נמוכה | תאריך בפורמט: YYYY-MM-DD</em>`,
+    template:[['משימה','קטגוריה','תאריך','עדיפות'],
+              ['לבקר באולם','אולם','2025-03-01','גבוהה']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['משימה']||'',cat:row['קטגוריה']||'אחר',
+      date:row['תאריך']||'',priority:row['עדיפות']||'בינונית',done:false}),
+    validate:(r)=>r['משימה'],
+    collection:'tasks'
+  },
+  seating:{
+    title:'📥 ייבוא סידורי ישיבה',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">שם אורח</span><span class="col-pill">שולחן</span><br>
+      <em>האורח חייב להיות קיים ברשימת האורחים. שמות שולחנות חייבים להיות קיימים.</em>`,
+    template:[['שם אורח','שולחן'],['ישראל ישראלי','שולחן 1']],
+    map:(row)=>row,
+    validate:(r)=>r['שם אורח'],
+    collection:'seating'
+  },
+  bar:{
+    title:'📥 ייבוא ספקי בר',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">שם</span><span class="col-pill">סוג בר</span>
+      <span class="col-pill">טלפון</span><span class="col-pill">מחיר</span>
+      <span class="col-pill">שעות שירות</span><span class="col-pill">שוטים</span><span class="col-pill">סטטוס</span><span class="col-pill">הערות</span><br>
+      <em>סוג בר: בר פסיבי / בר אקטיבי / שניהם | שוטים: כן / לא</em>`,
+    template:[['שם','סוג בר','טלפון','מחיר','שעות שירות','שוטים','סטטוס','הערות'],
+              ['Bono Bar','בר אקטיבי','050-1111111',6000,'18:00–23:00','כן','בבדיקה','']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['שם']||'',type:row['סוג בר']||'בר פסיבי',phone:String(row['טלפון']||''),
+      price:+row['מחיר']||0,hours:row['שעות שירות']||'',shots:row['שוטים']||'לא',
+      status:row['סטטוס']||'בבדיקה',notes:row['הערות']||''}),
+    validate:(r)=>r['שם'],
+    collection:'bar'
+  },
+  disco:{
+    title:'📥 ייבוא ספקי דיסקו שקט',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">שם</span><span class="col-pill">טלפון</span>
+      <span class="col-pill">מחיר לאוזניה</span><span class="col-pill">כמות אוזניות</span>
+      <span class="col-pill">ערוצים</span><span class="col-pill">שעות שכירה</span>
+      <span class="col-pill">סטטוס</span><span class="col-pill">הערות</span>`,
+    template:[['שם','טלפון','מחיר לאוזניה','כמות אוזניות','ערוצים','שעות שכירה','סטטוס','הערות'],
+              ['OZNIOT PARTY','050-2222222',35,120,3,4,'בבדיקה','']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['שם']||'',phone:String(row['טלפון']||''),price:+row['מחיר לאוזניה']||0,
+      qty:+row['כמות אוזניות']||120,channels:+row['ערוצים']||3,hours:+row['שעות שכירה']||4,
+      status:row['סטטוס']||'בבדיקה',notes:row['הערות']||''}),
+    validate:(r)=>r['שם'],
+    collection:'disco'
+  }
+};
+
+function triggerImport(section){
+  importTarget=section;
+  const schema=IMPORT_SCHEMAS[section];
+  document.getElementById('import-title').textContent=schema.title;
+  document.getElementById('import-hint').innerHTML=schema.hint;
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  openModal('importModal');
+}
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file=e.dataTransfer.files[0];
+  if(file)processImportFile(file);
+}
+function handleFileInput(e){const file=e.target.files[0];if(file)processImportFile(file);}
+
+function processImportFile(file){
+  if(!importTarget){showToast('שגיאה: לא נבחר יעד ייבוא','error');return;}
+  const schema=IMPORT_SCHEMAS[importTarget];
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){showToast('הקובץ ריק או לא תקין','error');return;}
+
+      let imported=0, skipped=0;
+
+      if(importTarget==='seating'){
+        // special: update existing guests' table assignment
+        rows.forEach(row=>{
+          if(!schema.validate(row)){skipped++;return;}
+          const g=db.guests.find(x=>x.name===String(row['שם אורח']||'').trim());
+          if(g){g.table=String(row['שולחן']||'').trim();imported++;}else{skipped++;}
+        });
+      } else {
+        rows.forEach(row=>{
+          if(!schema.validate(row)){skipped++;return;}
+          const obj=schema.map(row);
+          obj.id=Date.now()+Math.random();
+          db[schema.collection].push(obj);
+          imported++;
+        });
+      }
+
+      saveData();closeModal('importModal');renderAll();
+      showToast(`✔ יובאו ${imported} רשומות${skipped?` (${skipped} דולגו)`:''}`, 'success');
+      // reset file input
+      document.getElementById('file-input').value='';
+    }catch(err){
+      showToast('שגיאה בקריאת הקובץ: '+err.message,'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function downloadTemplate(){
+  if(!importTarget)return;
+  const schema=IMPORT_SCHEMAS[importTarget];
+  const ws=XLSX.utils.aoa_to_sheet(schema.template);
+  ws['!dir']='rtl';
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'תבנית');
+  XLSX.writeFile(wb,`תבנית-${importTarget}.xlsx`);
+  showToast('⬇️ התבנית הורדה בהצלחה','success');
+}
+
+// ============================= EXCEL EXPORT =============================
+function exportSection(section){
+  let data=[], title='';
+  if(section==='dj'){
+    title='מוזיקה DJ';
+    data=[['שם','סוג','טלפון','מחיר','שעות שירות','עוצר רעש','הגברה','סטטוס','הערות'],
+      ...db.dj.map(d=>[d.name,d.type,d.phone,d.price,d.hours,d.curfew,d.sound,d.status,d.notes])];
+  }else if(section==='vendors'){
+    title='ספקים';
+    data=[['שם','קטגוריה','איש קשר','טלפון','מחיר מוסכם','שולם','סטטוס','הערות'],
+      ...db.vendors.map(v=>[v.name,v.cat,v.contact,v.phone,v.price,v.paid,v.status,v.notes])];
+  }else if(section==='budget'){
+    title='תקציב';
+    data=[['קטגוריה','תיאור','מתוכנן','בפועל','הפרש','סטטוס'],
+      ...db.budget.map(b=>[b.cat,b.desc,b.planned,b.actual,b.planned-b.actual,b.status])];
+  }else if(section==='guests'){
+    title='אורחים';
+    data=[['שם','קבוצה','מוזמנים','אישור הגעה','צרכים מיוחדים','שולחן'],
+      ...db.guests.map(g=>[g.name,g.group,g.count,g.rsvp,g.notes,g.table])];
+  }else if(section==='tasks'){
+    title='משימות';
+    data=[['משימה','קטגוריה','תאריך','עדיפות','סטטוס'],
+      ...db.tasks.map(t=>[t.name,t.cat,t.date,t.priority,t.done?'הושלם':'פתוח'])];
+  }else if(section==='seating'){
+    title='ישיבה';
+    data=[['אורח','קבוצה','שולחן','מוזמנים'],
+      ...db.guests.map(g=>[g.name,g.group,g.table||'לא שובץ',g.count])];
+  }else if(section==='bar'){
+    title='בר';
+    data=[['שם','סוג בר','טלפון','מחיר','שעות שירות','שוטים','סטטוס','הערות'],
+      ...db.bar.map(b=>[b.name,b.type,b.phone,b.price,b.hours,b.shots,b.status,b.notes])];
+  }else if(section==='disco'){
+    title='דיסקו שקט';
+    data=[['שם','טלפון','מחיר לאוזניה','כמות','עלות כוללת','ערוצים','שעות','סטטוס','הערות'],
+      ...db.disco.map(d=>[d.name,d.phone,d.price,d.qty,d.price*d.qty,d.channels,d.hours,d.status,d.notes])];
+  }
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!dir']='rtl';
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,title);
+  XLSX.writeFile(wb,`חתונה-${title}-${new Date().toLocaleDateString('he-IL').replace(/\//g,'-')}.xlsx`);
+  showToast(`📊 ${title} יוצא בהצלחה`,'success');
+}
+
+// ============================= INIT =============================
+updateCountdown();
+renderAll();
+</script>
+</body>
+</html>
