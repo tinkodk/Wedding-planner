@@ -17,7 +17,10 @@
       "Bash(winpty gh --version)",
       "Bash(cmd //c \"gh --version\")",
       "Bash(git -C \"/c/Users/dbkot/OneDrive/Tinko/Wedding/wedding-planning/wedding-planning\" status)",
-      "Bash(git -C \"/c/Users/dbkot/OneDrive/Tinko/Wedding/wedding-planning/wedding-planning/.claude/worktrees/stoic-leavitt\" log --oneline main..HEAD)"
+      "Bash(git -C \"/c/Users/dbkot/OneDrive/Tinko/Wedding/wedding-planning/wedding-planning/.claude/worktrees/stoic-leavitt\" log --oneline main..HEAD)",
+      "Bash(git -C \"/c/Users/dbkot/OneDrive/Tinko/Wedding/wedding-planning/wedding-planning\" fetch origin)",
+      "Bash(git -C \"/c/Users/dbkot/OneDrive/Tinko/Wedding/wedding-planning/wedding-planning\" log --oneline origin/main)",
+      "Bash(git -C \"/c/Users/dbkot/OneDrive/Tinko/Wedding/wedding-planning/wedding-planning/.claude/worktrees/stoic-leavitt\" diff --stat)"
     ]
   }
 }

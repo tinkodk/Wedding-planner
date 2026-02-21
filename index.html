@@ -356,13 +356,21 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="page-header">
     <div><h1>צילום ווידאו 📸</h1><p>ניהול ספקי צילום ווידאו לאירוע</p></div>
     <div class="header-actions">
-      <button class="btn btn-gold" onclick="alert('תכונה זו תתווסף בקרוב')">+ הוסף ספק</button>
+      <button class="btn btn-info" onclick="triggerImport('photography')">📥 ייבוא Excel</button>
+      <button class="btn btn-outline" onclick="exportSection('photography')">📊 ייצוא Excel</button>
+      <button class="btn btn-gold" onclick="openModal('photographyModal')">+ הוסף ספק</button>
     </div>
   </div>
   <div style="margin-top:22px;">
-    <div class="empty-state" style="padding:60px 20px">
-      <div class="icon" style="font-size:48px">📸</div>
-      <p style="margin-top:16px;font-size:15px">סעיף זה יתווסף בקרוב</p>
+    <div class="cards-row" id="photo-stats"></div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>ספקי צילום ווידאו</h3></div>
+      <table><thead><tr><th>ספק</th><th>סוג</th><th>טלפון</th><th>מחיר ₪</th><th>שעות שירות</th><th>אלבום?</th><th>רחפן?</th><th>סטטוס</th><th>הערות</th><th>פעולות</th></tr></thead>
+      <tbody id="photo-body"></tbody></table>
+    </div>
+    <div class="table-card">
+      <div class="table-card-header"><h3>⚙️ הגדרות צילום</h3></div>
+      <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="photo-settings"></div>
     </div>
   </div>
 </div>
@@ -602,6 +610,36 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- PHOTOGRAPHY -->
+<div class="modal-overlay" id="photographyModal">
+  <div class="modal">
+    <h3>📸 ספק צילום / וידאו חדש</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>שם הספק / צלם</label><input type="text" id="ph-name" placeholder="לדוגמה: סטודיו כהן"/></div>
+      <div class="form-group"><label>סוג</label>
+        <select id="ph-type"><option>צלם + וידאוגרף</option><option>צלם בלבד</option><option>וידאוגרף בלבד</option><option>סרטון קצר בלבד</option><option>אחר</option></select>
+      </div>
+      <div class="form-group"><label>טלפון</label><input type="tel" id="ph-phone"/></div>
+      <div class="form-group"><label>מחיר ₪</label><input type="number" id="ph-price" placeholder="0"/></div>
+      <div class="form-group"><label>שעות שירות</label><input type="text" id="ph-hours" placeholder="16:00 – 23:00"/></div>
+      <div class="form-group"><label>כולל אלבום?</label>
+        <select id="ph-album"><option value="כן">כן</option><option value="לא">לא</option></select>
+      </div>
+      <div class="form-group"><label>כולל רחפן?</label>
+        <select id="ph-drone"><option value="לא">לא</option><option value="כן">כן</option></select>
+      </div>
+      <div class="form-group"><label>סטטוס</label>
+        <select id="ph-status"><option>בבדיקה</option><option>מאושר</option><option>נדחה</option></select>
+      </div>
+      <div class="form-group full"><label>הערות</label><textarea id="ph-notes" rows="2" placeholder="סגנון צילום, דרישות מיוחדות..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('photographyModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="savePhotography()">שמור</button>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORT MODAL -->
 <div class="modal-overlay" id="importModal">
   <div class="modal">
@@ -701,7 +739,9 @@ function loadData() {
     ],
     djSettings:{budget:8000,startTime:'18:00',curfewTime:'23:00',guestCount:120},
     barSettings:{budget:7500,startTime:'17:00',endTime:'23:00',guestCount:120},
-    discoSettings:{budget:5000,curfew:'23:00',guestCount:120}
+    discoSettings:{budget:5000,curfew:'23:00',guestCount:120},
+    photography:[],
+    photoSettings:{budget:12000,hours:'16:00 – 23:00'}
   };
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
@@ -745,7 +785,7 @@ function actionBtns(editFn, deleteCollection, id){
 // ============================= RENDER ALL =============================
 function renderAll(){
   renderOverview(); renderVendors(); renderBudget(); renderGuests();
-  renderTasks(); renderSeating(); renderDJ(); renderBar(); renderDisco();
+  renderTasks(); renderSeating(); renderDJ(); renderBar(); renderDisco(); renderPhotography();
 }
 
 // ============================= DJ =============================
@@ -787,7 +827,8 @@ function saveDJ(){
     notes:document.getElementById('dj-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
   if(editingId){Object.assign(db.dj.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.dj.push(obj);}
-  saveData();closeModal('djModal');renderDJ();
+  syncToVendors(obj.name,'מוזיקה / DJ',obj.phone,obj.price,obj.status,obj.notes);
+  saveData();closeModal('djModal');renderDJ();renderVendors();renderOverview();
 }
 
 // ============================= OVERVIEW =============================
@@ -1085,7 +1126,8 @@ function saveBar(){
     status:document.getElementById('br-status').value,notes:document.getElementById('br-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
   if(editingId){Object.assign(db.bar.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.bar.push(obj);}
-  saveData();closeModal('barModal');renderBar();
+  syncToVendors(obj.name,'שירותי בר',obj.phone,obj.price,obj.status,obj.notes);
+  saveData();closeModal('barModal');renderBar();renderVendors();renderOverview();
 }
 
 // ============================= DISCO =============================
@@ -1127,7 +1169,62 @@ function saveDisco(){
     status:document.getElementById('d-status').value,notes:document.getElementById('d-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
   if(editingId){Object.assign(db.disco.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.disco.push(obj);}
-  saveData();closeModal('discoModal');renderDisco();
+  syncToVendors(obj.name,'דיסקו שקט',obj.phone,obj.price*obj.qty,obj.status,obj.notes);
+  saveData();closeModal('discoModal');renderDisco();renderVendors();renderOverview();
+}
+
+// ============================= PHOTOGRAPHY =============================
+function renderPhotography(){
+  const s=db.photoSettings;
+  const approved=db.photography.filter(p=>p.status==='מאושר');
+  const totalCost=approved.reduce((sum,p)=>sum+Number(p.price),0);
+  document.getElementById('photo-stats').innerHTML=`
+    <div class="stat-card"><div class="label">ספקים בבדיקה</div><div class="value">${db.photography.length}</div></div>
+    <div class="stat-card"><div class="label">מאושרים</div><div class="value" style="color:var(--success)">${approved.length}</div></div>
+    <div class="stat-card"><div class="label">עלות מאושרת ₪</div><div class="value">₪${fmt(totalCost)}</div><div class="sub">תקציב: ₪${fmt(s.budget)}</div></div>
+    <div class="stat-card"><div class="label">שעות שירות</div><div class="value" style="font-size:16px">${s.hours}</div></div>`;
+  document.getElementById('photo-body').innerHTML=db.photography.length?db.photography.map(p=>`
+    <tr><td><strong>${p.name}</strong></td><td>${p.type}</td><td>${p.phone||'–'}</td>
+    <td>₪${fmt(p.price)}</td><td>${p.hours||'–'}</td>
+    <td>${p.album==='כן'?'<span style="color:var(--success)">✔ כן</span>':'<span style="color:var(--text-dim)">✘ לא</span>'}</td>
+    <td>${p.drone==='כן'?'<span style="color:var(--success)">✔ כן</span>':'<span style="color:var(--text-dim)">✘ לא</span>'}</td>
+    <td>${badge(p.status)}</td><td style="color:var(--text-dim)">${p.notes||'–'}</td>
+    <td>${actionBtns('editPhotography','photography',p.id)}</td></tr>`).join('')
+    :`<tr><td colspan="10"><div class="empty-state"><div class="icon">📸</div><p>אין ספקי צילום</p></div></td></tr>`;
+  document.getElementById('photo-settings').innerHTML=`
+    <div class="form-group"><label>תקציב צילום ₪</label><input type="number" value="${s.budget}" onchange="db.photoSettings.budget=+this.value;saveData();renderPhotography()"/></div>
+    <div class="form-group"><label>שעות שירות</label><input type="text" value="${s.hours}" onchange="db.photoSettings.hours=this.value;saveData();renderPhotography()"/></div>`;
+}
+function editPhotography(id){
+  const p=db.photography.find(x=>x.id===id); if(!p)return; editingId=id;
+  document.getElementById('ph-name').value=p.name; document.getElementById('ph-type').value=p.type;
+  document.getElementById('ph-phone').value=p.phone||''; document.getElementById('ph-price').value=p.price||0;
+  document.getElementById('ph-hours').value=p.hours||''; document.getElementById('ph-album').value=p.album||'לא';
+  document.getElementById('ph-drone').value=p.drone||'לא';
+  document.getElementById('ph-status').value=p.status; document.getElementById('ph-notes').value=p.notes||'';
+  openModal('photographyModal');
+}
+function savePhotography(){
+  const obj={name:document.getElementById('ph-name').value.trim(),type:document.getElementById('ph-type').value,
+    phone:document.getElementById('ph-phone').value.trim(),price:+document.getElementById('ph-price').value||0,
+    hours:document.getElementById('ph-hours').value.trim(),album:document.getElementById('ph-album').value,
+    drone:document.getElementById('ph-drone').value,
+    status:document.getElementById('ph-status').value,notes:document.getElementById('ph-notes').value.trim()};
+  if(!obj.name)return alert('נא להזין שם');
+  if(editingId){Object.assign(db.photography.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.photography.push(obj);}
+  syncToVendors(obj.name,'צילום ווידאו',obj.phone,obj.price,obj.status,obj.notes);
+  saveData();closeModal('photographyModal');renderPhotography();renderVendors();renderOverview();
+}
+
+// ============================= VENDOR SYNC =============================
+function syncToVendors(name, cat, phone, price, status, notes){
+  const existing=db.vendors.find(v=>v.name===name&&v.cat===cat);
+  if(existing){
+    existing.phone=phone||existing.phone; existing.price=price||existing.price;
+    existing.status=status; existing.notes=notes||existing.notes;
+  } else {
+    db.vendors.push({id:Date.now()+Math.random(),name,cat,contact:'',phone:phone||'',price:price||0,paid:0,status,notes:notes||''});
+  }
 }
 
 // ============================= DELETE =============================
@@ -1266,6 +1363,23 @@ const IMPORT_SCHEMAS = {
     validate:(r)=>r['שם'],
     collection:'bar'
   },
+  photography:{
+    title:'📥 ייבוא ספקי צילום ווידאו',
+    hint:`<strong>עמודות נדרשות:</strong><br>
+      <span class="col-pill">שם</span><span class="col-pill">סוג</span>
+      <span class="col-pill">טלפון</span><span class="col-pill">מחיר</span>
+      <span class="col-pill">שעות שירות</span><span class="col-pill">אלבום</span>
+      <span class="col-pill">רחפן</span><span class="col-pill">סטטוס</span><span class="col-pill">הערות</span><br>
+      <em>סוג: צלם בלבד / וידאוגרף בלבד / צלם + וידאוגרף | אלבום / רחפן: כן / לא</em>`,
+    template:[['שם','סוג','טלפון','מחיר','שעות שירות','אלבום','רחפן','סטטוס','הערות'],
+              ['סטודיו כהן','צלם + וידאוגרף','050-9876543',12000,'16:00–23:00','כן','לא','בבדיקה','']],
+    map:(row)=>({id:Date.now()+Math.random(),
+      name:row['שם']||'',type:row['סוג']||'צלם + וידאוגרף',phone:String(row['טלפון']||''),
+      price:+row['מחיר']||0,hours:row['שעות שירות']||'',album:row['אלבום']||'לא',
+      drone:row['רחפן']||'לא',status:row['סטטוס']||'בבדיקה',notes:row['הערות']||''}),
+    validate:(r)=>r['שם'],
+    collection:'photography'
+  },
   disco:{
     title:'📥 ייבוא ספקי דיסקו שקט',
     hint:`<strong>עמודות נדרשות:</strong><br>
@@ -1322,11 +1436,16 @@ function processImportFile(file){
           if(g){g.table=String(row['שולחן']||'').trim();imported++;}else{skipped++;}
         });
       } else {
+        const vendorCatMap={dj:'מוזיקה / DJ',bar:'שירותי בר',disco:'דיסקו שקט',photography:'צילום ווידאו'};
         rows.forEach(row=>{
           if(!schema.validate(row)){skipped++;return;}
           const obj=schema.map(row);
           obj.id=Date.now()+Math.random();
           db[schema.collection].push(obj);
+          if(vendorCatMap[importTarget]){
+            const price=importTarget==='disco'?(obj.price*obj.qty):obj.price;
+            syncToVendors(obj.name,vendorCatMap[importTarget],obj.phone||'',price||0,obj.status||'בבדיקה',obj.notes||'');
+          }
           imported++;
         });
       }
@@ -1388,6 +1507,10 @@ function exportSection(section){
     title='דיסקו שקט';
     data=[['שם','טלפון','מחיר לאוזניה','כמות','עלות כוללת','ערוצים','שעות','סטטוס','הערות'],
       ...db.disco.map(d=>[d.name,d.phone,d.price,d.qty,d.price*d.qty,d.channels,d.hours,d.status,d.notes])];
+  }else if(section==='photography'){
+    title='צילום ווידאו';
+    data=[['שם','סוג','טלפון','מחיר','שעות שירות','אלבום','רחפן','סטטוס','הערות'],
+      ...db.photography.map(p=>[p.name,p.type,p.phone,p.price,p.hours,p.album,p.drone,p.status,p.notes])];
   }
   const ws=XLSX.utils.aoa_to_sheet(data);
   ws['!dir']='rtl';
