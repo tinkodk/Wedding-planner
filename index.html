@@ -746,6 +746,9 @@ function loadData() {
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
 let db = loadData();
+// migrate: ensure keys added after initial release exist in stored data
+if(!db.photography) db.photography = [];
+if(!db.photoSettings) db.photoSettings = {budget:12000, hours:'16:00 – 23:00'};
 let editingId = null;
 let taskFilter = 'all';
 let importTarget = null;
