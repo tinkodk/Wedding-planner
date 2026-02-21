@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ניהול חתונה – טינקו</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -1208,15 +1209,20 @@ function editPhotography(id){
   openModal('photographyModal');
 }
 function savePhotography(){
-  const obj={name:document.getElementById('ph-name').value.trim(),type:document.getElementById('ph-type').value,
-    phone:document.getElementById('ph-phone').value.trim(),price:+document.getElementById('ph-price').value||0,
-    hours:document.getElementById('ph-hours').value.trim(),album:document.getElementById('ph-album').value,
-    drone:document.getElementById('ph-drone').value,
-    status:document.getElementById('ph-status').value,notes:document.getElementById('ph-notes').value.trim()};
-  if(!obj.name)return alert('נא להזין שם');
-  if(editingId){Object.assign(db.photography.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.photography.push(obj);}
-  syncToVendors(obj.name,'צילום ווידאו',obj.phone,obj.price,obj.status,obj.notes);
-  saveData();closeModal('photographyModal');renderPhotography();renderVendors();renderOverview();
+  try {
+    const obj={name:document.getElementById('ph-name').value.trim(),type:document.getElementById('ph-type').value,
+      phone:document.getElementById('ph-phone').value.trim(),price:+document.getElementById('ph-price').value||0,
+      hours:document.getElementById('ph-hours').value.trim(),album:document.getElementById('ph-album').value,
+      drone:document.getElementById('ph-drone').value,
+      status:document.getElementById('ph-status').value,notes:document.getElementById('ph-notes').value.trim()};
+    if(!obj.name)return alert('נא להזין שם');
+    if(editingId){Object.assign(db.photography.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.photography.push(obj);}
+    syncToVendors(obj.name,'צילום ווידאו',obj.phone,obj.price,obj.status,obj.notes);
+    saveData();closeModal('photographyModal');renderPhotography();renderVendors();renderOverview();
+  } catch(e) {
+    alert('שגיאה בשמירה: ' + e.message);
+    console.error('savePhotography error:', e);
+  }
 }
 
 // ============================= VENDOR SYNC =============================
