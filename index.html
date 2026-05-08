@@ -1383,8 +1383,8 @@ function renderGroups(){
   if(!Object.keys(groups).length){grid.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div>';return;}
   grid.innerHTML=Object.entries(groups).map(([grp,guests])=>{
     const color=groupColor(grp);
-    const total=guests.reduce((s,g)=>s+Number(g.count),0);
-    const seated=guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
+    const total=guests.reduce((s,g)=>s+Number(g.arriving||0),0);
+    const seated=guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.arriving||0),0);
     return `<div class="group-card">
       <div class="group-card-header">
         <div class="group-card-title"><div class="group-dot" style="background:${color}"></div>${grp}</div>
@@ -1397,7 +1397,7 @@ function renderGroups(){
         <div class="group-guest-row">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="color:var(--text);font-size:12px;">${g.name}</span>
-            <span style="font-size:11px;color:var(--text-dim)">(${g.count})</span>
+            <span style="font-size:11px;color:var(--text-dim)">(${g.arriving||0})</span>
           </div>
           ${g.table?`<span class="seated-badge">🪑 ${g.table}</span>`:`<span class="unseated-badge">לא שובץ</span>`}
         </div>`).join('')}
@@ -1426,13 +1426,13 @@ function saveGroupAssignment(){
 function renderSmartView(){
   const groups={};
   for(const g of db.guests.filter(g=>!g.table)){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
-  const unassignedTotal=Object.values(groups).flat().reduce((s,g)=>s+Number(g.count),0);
+  const unassignedTotal=Object.values(groups).flat().reduce((s,g)=>s+Number(g.arriving||0),0);
   const panel=document.getElementById('unassigned-panel');
 
   panel.innerHTML=`<div class="unassigned-panel-header">👥 לא משובצים (${unassignedTotal})</div>`+
     (Object.keys(groups).length?Object.entries(groups).map(([grp,guests])=>{
       const color=groupColor(grp);
-      const total=guests.reduce((s,g)=>s+Number(g.count),0);
+      const total=guests.reduce((s,g)=>s+Number(g.arriving||0),0);
       const gid='ug'+btoa(unescape(encodeURIComponent(grp))).replace(/[^a-zA-Z0-9]/g,'');
       return `<div class="unassigned-group">
         <div class="unassigned-group-header" onclick="document.getElementById('${gid}').style.display=document.getElementById('${gid}').style.display==='none'?'':'none'">
@@ -1440,7 +1440,7 @@ function renderSmartView(){
           <span class="group-badge">${total}</span>
         </div>
         <div class="unassigned-group-guests" id="${gid}">
-          ${guests.map(g=>`<span class="uguest-chip" style="background:${color}22;color:${color};border-color:${color}44;" onclick="quickAssignGuest(${g.id})">${g.name} (${g.count})</span>`).join('')}
+          ${guests.map(g=>`<span class="uguest-chip" style="background:${color}22;color:${color};border-color:${color}44;" onclick="quickAssignGuest(${g.id})">${g.name} (${g.arriving||0})</span>`).join('')}
           <button class="btn btn-sm btn-outline" style="font-size:10px;padding:2px 8px;margin-top:2px;width:100%;" onclick="openGroupAssign(${JSON.stringify(grp)})">שבץ כל הקבוצה →</button>
         </div>
       </div>`;
