@@ -1844,16 +1844,22 @@ function processImportFile(file){
           if(g){g.table=String(row['שולחן']||'').trim();imported++;}else{skipped++;}
         });
       } else if(importTarget==='guests'){
-        // upsert: update by name if exists, otherwise add new
+        const validRows=rows.filter(r=>schema.validate(r));
+        if(!validRows.length){showToast('לא נמצאו שורות תקינות בקובץ','error');return;}
+        const doReplace=confirm(
+          `נמצאו ${validRows.length} אורחים בקובץ.\n\n`+
+          `אישור — מחק את כל הרשימה הקיימת (${db.guests.length} אורחים) וייבא מחדש.\n`+
+          `ביטול — הוסף / עדכן שורות ללא מחיקה.`
+        );
+        if(doReplace) db.guests=[];
         let tablesAssigned=0;
-        rows.forEach(row=>{
-          if(!schema.validate(row)){skipped++;return;}
+        validRows.forEach(row=>{
           const obj=schema.map(row);
           const existing=db.guests.find(g=>g.name===obj.name);
           if(existing){
             const prevTable=existing.table;
             Object.assign(existing,obj);
-            existing.id=existing.id; // keep original id
+            existing.id=existing.id;
             if(obj.table&&obj.table!==prevTable)tablesAssigned++;
           }else{
             obj.id=Date.now()+Math.random();
@@ -1864,7 +1870,8 @@ function processImportFile(file){
         });
         saveData();closeModal('importModal');renderAll();
         const tableNote=tablesAssigned?` | ${tablesAssigned} שובצו לשולחן — <span style="cursor:pointer;text-decoration:underline;" onclick="showSection('seating',Array.from(document.querySelectorAll('.nav-item')).find(b=>b.textContent.includes('סידורי')))">עבור לשיבוץ ←</span>`:'';
-        showToast(`✔ יובאו ${imported} אורחים${skipped?` (${skipped} דולגו)`:''}${tableNote}`,'success');
+        const modeNote=doReplace?' (הרשימה הוחלפה)':' (עדכון/הוספה)';
+        showToast(`✔ יובאו ${imported} אורחים${modeNote}${skipped?` | ${skipped} דולגו`:''}${tableNote}`,'success');
         document.getElementById('file-input').value='';
         return;
       } else {
