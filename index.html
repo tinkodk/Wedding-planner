@@ -965,7 +965,7 @@ function renderOverview(){
   const totalB=db.budget.reduce((s,b)=>s+Number(b.planned),0);
   const totalA=db.budget.reduce((s,b)=>s+Number(b.actual),0);
   const totalG=db.guests.reduce((s,g)=>s+Number(g.count),0);
-  const coming=db.guests.filter(g=>g.rsvp==='מגיעים').reduce((s,g)=>s+Number(g.count),0);
+  const coming=db.guests.reduce((s,g)=>s+Number(g.arriving||0),0);
   const tentative=db.guests.filter(g=>g.rsvp==='מתלבטים').reduce((s,g)=>s+Number(g.count),0);
   const noAnswer=db.guests.filter(g=>g.rsvp==='אין מענה'||g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
   const notComing=db.guests.filter(g=>g.rsvp==='לא מגיעים'||g.rsvp==='ביטל').reduce((s,g)=>s+Number(g.count),0);
@@ -1079,7 +1079,7 @@ function renderGuests(){
   const q=(document.getElementById('guest-search')||{}).value||'';
   const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q)||(g.source||'').includes(q)||(g.phone||'').includes(q));
   const total=db.guests.reduce((s,g)=>s+Number(g.count),0);
-  const coming=db.guests.filter(g=>g.rsvp==='מגיעים').reduce((s,g)=>s+Number(g.count),0);
+  const coming=db.guests.reduce((s,g)=>s+Number(g.arriving||0),0);
   const notComing=db.guests.filter(g=>g.rsvp==='לא מגיעים').reduce((s,g)=>s+Number(g.count),0);
   const noAnswer=db.guests.filter(g=>g.rsvp==='אין מענה'||g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
   const tentative=db.guests.filter(g=>g.rsvp==='מתלבטים').reduce((s,g)=>s+Number(g.count),0);
