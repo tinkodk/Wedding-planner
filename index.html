@@ -304,7 +304,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <input class="search-bar" type="text" placeholder="חיפוש אורח..." id="guest-search" oninput="renderGuests()"/>
       <button class="btn btn-info" onclick="triggerImport('guests')">📥 ייבוא Excel</button>
       <button class="btn btn-outline" onclick="exportSection('guests')">📊 ייצוא Excel</button>
-      <button class="btn btn-gold" onclick="openModal('guestModal')">+ הוסף אורח</button>
+      <button class="btn btn-gold" onclick="openGuestModal()">+ הוסף אורח</button>
     </div>
   </div>
   <div style="margin-top:22px;">
@@ -519,25 +519,17 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <!-- GUEST -->
 <div class="modal-overlay" id="guestModal">
   <div class="modal">
-    <h3>➕ אורח חדש</h3>
+    <h3 id="guest-modal-title">➕ אורח חדש</h3>
     <div class="form-grid">
       <div class="form-group full"><label>שם אורח</label><input type="text" id="g-name"/></div>
       <div class="form-group"><label>טלפון</label><input type="text" id="g-phone" placeholder="050-0000000"/></div>
-      <div class="form-group"><label>קבוצה</label>
-        <select id="g-group"><option>Familia</option><option>Amigos</option><option>Hijos</option><option>Work</option><option>אחר</option></select>
-      </div>
-      <div class="form-group"><label>מקור</label>
-        <select id="g-source"><option>Andrea</option><option>Tinko</option><option>משותף</option></select>
-      </div>
+      <div class="form-group"><label>קבוצה</label><input type="text" id="g-group" list="g-group-list" placeholder="בחר או הקלד קבוצה"/><datalist id="g-group-list"></datalist></div>
       <div class="form-group"><label>סטטוס</label>
         <select id="g-rsvp"><option value="אין מענה">אין מענה</option><option value="מגיעים">מגיעים</option><option value="מתלבטים">מתלבטים</option><option value="לא מגיעים">לא מגיעים</option></select>
       </div>
-      <div class="form-group"><label>הודעה</label>
-        <select id="g-notified"><option value="לא נשלחה">לא נשלחה</option><option value="נשלחה">נשלחה</option></select>
-      </div>
       <div class="form-group"><label>מוזמנים</label><input type="number" id="g-count" value="1" min="1"/></div>
       <div class="form-group"><label>מגיעים</label><input type="number" id="g-arriving" value="0" min="0"/></div>
-      <div class="form-group"><label>שולחן</label><input type="text" id="g-table" placeholder="לדוגמה: שולחן 5"/></div>
+      <div class="form-group"><label>שולחן</label><input type="text" id="g-table" placeholder="לדוגמה: שולחן 5" list="g-table-list"/><datalist id="g-table-list"></datalist></div>
       <div class="form-group full"><label>הערות</label><input type="text" id="g-notes" placeholder="הערות נוספות..."/></div>
     </div>
     <div class="modal-actions">
@@ -1103,34 +1095,54 @@ function renderGuests(){
     </tr>`).join('')
     :`<tr><td colspan="9"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
 }
-function editGuest(id){
-  const g=db.guests.find(x=>x.id===id); if(!g)return; editingId=id;
-  document.getElementById('g-name').value=g.name;
-  document.getElementById('g-phone').value=g.phone||'';
-  document.getElementById('g-group').value=g.group;
-  document.getElementById('g-source').value=g.source||'Andrea';
-  document.getElementById('g-rsvp').value=g.rsvp;
-  document.getElementById('g-notified').value=g.notified||'לא נשלחה';
-  document.getElementById('g-count').value=g.count;
-  document.getElementById('g-arriving').value=g.arriving||0;
-  document.getElementById('g-table').value=g.table||'';
-  document.getElementById('g-notes').value=g.notes||'';
+function openGuestModal(id){
+  editingId=id||null;
+  const groups=[...new Set(db.guests.map(g=>g.group).filter(Boolean))];
+  document.getElementById('g-group-list').innerHTML=groups.map(g=>`<option value="${g}">`).join('');
+  document.getElementById('g-table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
+  if(id){
+    const g=db.guests.find(x=>x.id===id); if(!g)return;
+    document.getElementById('guest-modal-title').textContent='✏️ עריכת אורח';
+    document.getElementById('g-name').value=g.name;
+    document.getElementById('g-phone').value=g.phone||'';
+    document.getElementById('g-group').value=g.group||'';
+    document.getElementById('g-rsvp').value=g.rsvp||'אין מענה';
+    document.getElementById('g-count').value=g.count||1;
+    document.getElementById('g-arriving').value=g.arriving||0;
+    document.getElementById('g-table').value=g.table||'';
+    document.getElementById('g-notes').value=g.notes||'';
+  }else{
+    document.getElementById('guest-modal-title').textContent='➕ אורח חדש';
+    document.getElementById('g-name').value='';
+    document.getElementById('g-phone').value='';
+    document.getElementById('g-group').value='';
+    document.getElementById('g-rsvp').value='אין מענה';
+    document.getElementById('g-count').value=1;
+    document.getElementById('g-arriving').value=0;
+    document.getElementById('g-table').value='';
+    document.getElementById('g-notes').value='';
+  }
   openModal('guestModal');
 }
+function editGuest(id){ openGuestModal(id); }
 function saveGuest(){
   const obj={
     name:document.getElementById('g-name').value.trim(),
     phone:document.getElementById('g-phone').value.trim(),
-    group:document.getElementById('g-group').value,
-    source:document.getElementById('g-source').value,
+    group:document.getElementById('g-group').value.trim(),
     rsvp:document.getElementById('g-rsvp').value,
-    notified:document.getElementById('g-notified').value,
     count:+document.getElementById('g-count').value||1,
     arriving:+document.getElementById('g-arriving').value||0,
     table:document.getElementById('g-table').value.trim(),
     notes:document.getElementById('g-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
-  if(editingId){Object.assign(db.guests.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.guests.push(obj);}
+  if(editingId){
+    const ex=db.guests.find(x=>x.id===editingId);
+    Object.assign(ex,obj);
+  }else{
+    obj.id=Date.now();obj.source='';obj.notified='לא נשלחה';
+    db.guests.push(obj);
+  }
   saveData();closeModal('guestModal');renderGuests();renderOverview();renderSeating();
 }
 
