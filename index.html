@@ -310,7 +310,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div style="margin-top:22px;">
     <div class="cards-row" id="guest-stats"></div>
     <div class="table-card">
-      <table><thead><tr><th>קבוצה</th><th>מקור</th><th>שם אורח</th><th>טלפון</th><th>מוזמנים</th><th>מגיעים</th><th>הודעה</th><th>סטטוס</th><th>הערות</th><th>שולחן</th><th>פעולות</th></tr></thead>
+      <table><thead><tr><th>קבוצה</th><th>שם אורח</th><th>טלפון</th><th>מוזמנים</th><th>מגיעים</th><th>סטטוס</th><th>הערות</th><th>שולחן</th><th>פעולות</th></tr></thead>
       <tbody id="guests-body"></tbody></table>
     </div>
   </div>
@@ -1082,18 +1082,16 @@ function renderGuests(){
   document.getElementById('guests-body').innerHTML=list.length?list.map(g=>`
     <tr>
       <td>${g.group}</td>
-      <td>${g.source||'–'}</td>
       <td><strong>${g.name}</strong></td>
       <td style="color:var(--text-dim)">${g.phone||'–'}</td>
       <td>${g.count}</td>
       <td style="color:var(--success)">${g.arriving||0}</td>
-      <td>${badge(g.notified||'לא נשלחה')}</td>
       <td>${badge(g.rsvp)}</td>
       <td style="color:var(--text-dim)">${g.notes||'–'}</td>
       <td>${g.table||'–'}</td>
       <td>${actionBtns('editGuest','guests',g.id)}</td>
     </tr>`).join('')
-    :`<tr><td colspan="11"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
+    :`<tr><td colspan="9"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
 }
 function editGuest(id){
   const g=db.guests.find(x=>x.id===id); if(!g)return; editingId=id;
