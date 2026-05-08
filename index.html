@@ -344,7 +344,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div><h1>סידורי ישיבה</h1><p>שולחנות ושיבוץ אורחים</p></div>
     <div class="header-actions">
       <button class="btn btn-outline" onclick="triggerPptxImport()">📎 ייבוא PPTX</button>
-      <button class="btn btn-info" onclick="triggerImport('seating')">📥 ייבוא Excel</button>
       <button class="btn btn-outline" onclick="exportSection('seating')">📊 ייצוא Excel</button>
       <button class="btn btn-outline" onclick="openModal('tableModal')">+ הוסף שולחן</button>
       <button class="btn btn-gold" onclick="openModal('seatAssignModal')">🪑 שבץ אורח</button>
@@ -1688,17 +1687,18 @@ const IMPORT_SCHEMAS = {
     collection:'budget'
   },
   guests:{
-    title:'📥 ייבוא אורחים',
+    title:'📥 ייבוא אורחים ושיבוץ לשולחנות',
     hint:`<strong>עמודות נדרשות:</strong><br>
       <span class="col-pill">שם</span><span class="col-pill">קבוצה</span>
       <span class="col-pill">מוזמנים</span><span class="col-pill">אישור הגעה</span>
-      <span class="col-pill">הערות</span><span class="col-pill">שולחן</span><br>
-      <em>אישור הגעה: אישר / ממתין / ביטל</em>`,
+      <span class="col-pill">הערות</span><span class="col-pill" style="background:rgba(201,168,76,.25);color:var(--gold)">שולחן</span><br>
+      <em>אישור הגעה: אישר / ממתין / ביטל | אורח קיים לפי שם — יעודכן, לא יכופל. עמודת <strong>שולחן</strong> מעדכנת את השיבוץ ישירות.</em>`,
     template:[['שם','קבוצה','מוזמנים','אישור הגעה','הערות','שולחן'],
-              ['ישראל ישראלי','משפחת חתן',2,'ממתין','','']],
+              ['ישראל ישראלי','משפחת חתן',2,'ממתין','','שולחן 1']],
     map:(row)=>({id:Date.now()+Math.random(),
       name:row['שם']||'',group:row['קבוצה']||'אחר',count:+row['מוזמנים']||1,
-      rsvp:row['אישור הגעה']||'ממתין',notes:row['הערות']||'',table:row['שולחן']||''}),
+      rsvp:row['אישור הגעה']||'ממתין',notes:row['הערות']||'',table:row['שולחן']||'',
+      notified:'לא נשלחה',source:''}),
     validate:(r)=>r['שם'],
     collection:'guests'
   },
@@ -1808,12 +1808,36 @@ function processImportFile(file){
       let imported=0, skipped=0;
 
       if(importTarget==='seating'){
-        // special: update existing guests' table assignment
+        // update existing guests' table assignment
         rows.forEach(row=>{
           if(!schema.validate(row)){skipped++;return;}
           const g=db.guests.find(x=>x.name===String(row['שם אורח']||'').trim());
           if(g){g.table=String(row['שולחן']||'').trim();imported++;}else{skipped++;}
         });
+      } else if(importTarget==='guests'){
+        // upsert: update by name if exists, otherwise add new
+        let tablesAssigned=0;
+        rows.forEach(row=>{
+          if(!schema.validate(row)){skipped++;return;}
+          const obj=schema.map(row);
+          const existing=db.guests.find(g=>g.name===obj.name);
+          if(existing){
+            const prevTable=existing.table;
+            Object.assign(existing,obj);
+            existing.id=existing.id; // keep original id
+            if(obj.table&&obj.table!==prevTable)tablesAssigned++;
+          }else{
+            obj.id=Date.now()+Math.random();
+            db.guests.push(obj);
+            if(obj.table)tablesAssigned++;
+          }
+          imported++;
+        });
+        saveData();closeModal('importModal');renderAll();
+        const tableNote=tablesAssigned?` | ${tablesAssigned} שובצו לשולחן — <span style="cursor:pointer;text-decoration:underline;" onclick="showSection('seating',Array.from(document.querySelectorAll('.nav-item')).find(b=>b.textContent.includes('סידורי')))">עבור לשיבוץ ←</span>`:'';
+        showToast(`✔ יובאו ${imported} אורחים${skipped?` (${skipped} דולגו)`:''}${tableNote}`,'success');
+        document.getElementById('file-input').value='';
+        return;
       } else {
         const vendorCatMap={dj:'מוזיקה / DJ',bar:'שירותי בר',disco:'דיסקו שקט',photography:'צילום ווידאו'};
         rows.forEach(row=>{
