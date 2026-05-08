@@ -7,6 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root {
   --bg:#0d0d0f; --surface:#16161a; --surface2:#1e1e24; --surface3:#27272f;
@@ -134,6 +135,42 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .table-block .seats-list{display:flex;flex-wrap:wrap;gap:4px;}
 .seat-chip{font-size:10px;padding:2px 6px;background:rgba(255,255,255,.06);border-radius:20px;color:var(--text-dim);}
 .seat-chip.filled{background:rgba(201,168,76,.2);color:var(--gold);}
+/* SEATING TABS */
+.seating-tabs{display:flex;gap:6px;margin-bottom:4px;}
+.seating-tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:all .15s;}
+.seating-tab:hover{color:var(--text);}
+.seating-tab.active{background:rgba(201,168,76,.15);color:var(--gold);border-color:var(--gold-dim);}
+/* GROUPS VIEW */
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:13px;margin-top:18px;}
+.group-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.group-card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);}
+.group-card-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.group-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.group-badge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--surface3);color:var(--text-dim);}
+.group-guests-list{padding:10px 14px;display:flex;flex-direction:column;gap:4px;}
+.group-guest-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:3px 0;}
+.seated-badge{font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(92,224,138,.15);color:var(--success);}
+.unseated-badge{font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,.06);color:var(--text-dim);}
+/* SMART VIEW */
+.smart-layout{display:grid;grid-template-columns:270px 1fr;gap:16px;align-items:start;margin-top:18px;}
+.unassigned-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:sticky;top:20px;max-height:calc(100vh - 200px);overflow-y:auto;}
+.unassigned-panel-header{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px;position:sticky;top:0;background:var(--surface2);z-index:1;}
+.unassigned-group{border-bottom:1px solid var(--border);}
+.unassigned-group:last-child{border-bottom:none;}
+.unassigned-group-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;transition:background .15s;}
+.unassigned-group-header:hover{background:var(--surface3);}
+.unassigned-group-name{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.unassigned-group-guests{padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:5px;}
+.uguest-chip{font-size:11px;padding:3px 9px;border-radius:20px;cursor:pointer;transition:filter .15s;border:1px solid transparent;}
+.uguest-chip:hover{filter:brightness(1.25);}
+/* PPTX PREVIEW TABLE */
+.pptx-table-preview{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
+.pptx-table-preview th{text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:11px;font-weight:600;}
+.pptx-table-preview td{padding:6px 10px;border-bottom:1px solid var(--border);}
+.pptx-table-preview tr:last-child td{border-bottom:none;}
+.pptx-table-preview input[type=text],.pptx-table-preview input[type=number]{background:transparent;border:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:100%;}
+.pptx-table-preview input[type=number]{width:60px;}
+.pptx-table-preview input:focus{border-bottom:1px solid var(--gold-dim);}
 .table-count{font-size:11px;color:var(--text-dim);margin-top:6px;}
 
 /* OVERVIEW */
@@ -306,6 +343,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="page-header">
     <div><h1>סידורי ישיבה</h1><p>שולחנות ושיבוץ אורחים</p></div>
     <div class="header-actions">
+      <button class="btn btn-outline" onclick="triggerPptxImport()">📎 ייבוא PPTX</button>
       <button class="btn btn-info" onclick="triggerImport('seating')">📥 ייבוא Excel</button>
       <button class="btn btn-outline" onclick="exportSection('seating')">📊 ייצוא Excel</button>
       <button class="btn btn-outline" onclick="openModal('tableModal')">+ הוסף שולחן</button>
@@ -314,7 +352,19 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
   <div style="margin-top:22px;">
     <div class="cards-row" id="seating-stats"></div>
-    <div class="seating-grid" id="seating-grid"></div>
+    <div class="seating-tabs">
+      <button class="seating-tab active" id="stab-tables" onclick="setSeatingView('tables')">🪑 שולחנות</button>
+      <button class="seating-tab" id="stab-groups" onclick="setSeatingView('groups')">👥 לפי קבוצה</button>
+      <button class="seating-tab" id="stab-smart" onclick="setSeatingView('smart')">🗺️ שיבוץ חכם</button>
+    </div>
+    <div id="sv-tables"><div class="seating-grid" id="seating-grid"></div></div>
+    <div id="sv-groups" style="display:none"><div class="groups-grid" id="groups-grid"></div></div>
+    <div id="sv-smart" style="display:none">
+      <div class="smart-layout">
+        <div class="unassigned-panel" id="unassigned-panel"></div>
+        <div class="seating-grid" id="smart-tables-grid"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -543,6 +593,34 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('seatAssignModal')">ביטול</button>
       <button class="btn btn-gold" onclick="assignSeat()">שבץ</button>
+    </div>
+  </div>
+</div>
+
+<!-- PPTX PREVIEW -->
+<div class="modal-overlay" id="pptxModal">
+  <div class="modal" style="max-width:620px;width:100%;">
+    <h3>📎 ייבוא שולחנות מ-PPTX</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">נמצאו השולחנות הבאים — ניתן לערוך שם ומספר מקומות לפני הייבוא:</p>
+    <div id="pptx-preview-content" style="max-height:350px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('pptxModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="importSelectedPptxTables()">ייבא נבחרים</button>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP ASSIGN -->
+<div class="modal-overlay" id="groupAssignModal">
+  <div class="modal">
+    <h3>👥 שיבוץ קבוצה לשולחן</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>קבוצה</label><div id="ga-group-label" style="font-size:14px;font-weight:700;color:var(--gold);padding:4px 0;"></div></div>
+      <div class="form-group full"><label>שולחן יעד</label><input type="text" id="ga-table" placeholder="שם השולחן" list="ga-table-list"/><datalist id="ga-table-list"></datalist></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('groupAssignModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="saveGroupAssignment()">שבץ קבוצה</button>
     </div>
   </div>
 </div>
@@ -1066,14 +1144,16 @@ function saveTask(){
 function renderSeating(){
   const total=db.tables.reduce((s,t)=>s+Number(t.seats),0);
   const assigned=db.guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
+  const groups=[...new Set(db.guests.map(g=>g.group).filter(Boolean))].length;
   document.getElementById('seating-stats').innerHTML=`
     <div class="stat-card"><div class="label">שולחנות</div><div class="value">${db.tables.length}</div></div>
     <div class="stat-card"><div class="label">מקומות ישיבה</div><div class="value">${total}</div></div>
     <div class="stat-card"><div class="label">משובצים</div><div class="value">${assigned}</div></div>
-    <div class="stat-card"><div class="label">פנויים</div><div class="value" style="color:var(--gold)">${total-assigned}</div></div>`;
+    <div class="stat-card"><div class="label">פנויים</div><div class="value" style="color:var(--gold)">${total-assigned}</div></div>
+    <div class="stat-card"><div class="label">קבוצות</div><div class="value">${groups}</div></div>`;
   const g=document.getElementById('seating-grid');
-  if(!db.tables.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;return;}
-  g.innerHTML=db.tables.map(t=>{
+  if(!db.tables.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;}
+  else{g.innerHTML=db.tables.map(t=>{
     const seated=db.guests.filter(g=>g.table===t.name);
     const cnt=seated.reduce((s,g)=>s+Number(g.count),0);
     return `<div class="table-block">
@@ -1083,11 +1163,13 @@ function renderSeating(){
           <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
         </div>
       </div>
-      <div class="seats-list">${seated.map(g=>`<span class="seat-chip filled">${g.name}</span>`).join('')}
+      <div class="seats-list">${seated.map(g=>{const c=groupColor(g.group||'ללא קבוצה');return `<span class="seat-chip filled" style="background:${c}22;color:${c};">${g.name}</span>`;}).join('')}
       ${Array.from({length:Math.max(0,Number(t.seats)-cnt)}).map(()=>`<span class="seat-chip">פנוי</span>`).join('')}</div>
       <div class="table-count">${cnt} / ${t.seats} מקומות</div>
     </div>`;
-  }).join('');
+  }).join('');}
+  if(_seatingView==='groups')renderGroups();
+  if(_seatingView==='smart')renderSmartView();
 }
 function editTable(id){
   const t=db.tables.find(x=>x.id===id); if(!t)return; editingId=id;
@@ -1135,6 +1217,248 @@ function openSeatAssignModal(){
   document.getElementById('sa-guest').innerHTML=db.guests.map(g=>`<option value="${g.id}">${g.name} (${g.count} אורחים)</option>`).join('');
   document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
   document.getElementById('sa-table').value='';
+  document.getElementById('seatAssignModal').classList.add('open');
+}
+
+// ============================= GROUP COLORS =============================
+const _GRP_COLORS=['#c9a84c','#5ce08a','#5ca8e0','#e05c8a','#a05ce0','#e0a05c','#5cd8e0','#e07a5c','#7ae05c','#c05ce0'];
+function groupColor(name){
+  let h=0;for(let i=0;i<name.length;i++)h=((h<<5)-h)+name.charCodeAt(i);
+  return _GRP_COLORS[Math.abs(h)%_GRP_COLORS.length];
+}
+
+// ============================= SEATING VIEW TABS =============================
+let _seatingView='tables';
+function setSeatingView(v){
+  _seatingView=v;
+  ['tables','groups','smart'].forEach(n=>{
+    document.getElementById('sv-'+n).style.display=n===v?'':'none';
+    document.getElementById('stab-'+n).classList.toggle('active',n===v);
+  });
+  if(v==='groups')renderGroups();
+  if(v==='smart')renderSmartView();
+}
+
+// ============================= PPTX IMPORT =============================
+function triggerPptxImport(){
+  if(typeof JSZip==='undefined'){alert('JSZip לא נטען עדיין. נסה שנית.');return;}
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.pptx';
+  inp.onchange=async e=>{
+    const file=e.target.files[0];if(!file)return;
+    try{const data=await _parsePptx(file);_showPptxPreview(data);}
+    catch(err){alert('שגיאה בקריאת הקובץ: '+err.message);}
+  };
+  inp.click();
+}
+
+async function _parsePptx(file){
+  const zip=await JSZip.loadAsync(file);
+  const ns='http://schemas.openxmlformats.org/drawingml/2006/main';
+  const slideFiles=Object.keys(zip.files)
+    .filter(f=>/^ppt\/slides\/slide\d+\.xml$/.test(f))
+    .sort((a,b)=>(+a.match(/\d+/)[0])-(+b.match(/\d+/)[0]));
+
+  const results=[];
+  for(const sf of slideFiles){
+    const xml=await zip.files[sf].async('text');
+    const doc=new DOMParser().parseFromString(xml,'application/xml');
+    const slideNum=sf.match(/\d+/)[0];
+
+    // Extract PPTX table elements
+    const tbls=doc.getElementsByTagNameNS(ns,'tbl');
+    for(const tbl of tbls){
+      const rows=[];
+      for(const tr of tbl.getElementsByTagNameNS(ns,'tr')){
+        const cells=[];
+        for(const tc of tr.getElementsByTagNameNS(ns,'tc')){
+          let txt='';
+          for(const t of tc.getElementsByTagNameNS(ns,'t'))txt+=t.textContent;
+          cells.push(txt.trim());
+        }
+        if(cells.some(c=>c))rows.push(cells);
+      }
+      if(rows.length)results.push({type:'table',rows,slide:slideNum});
+    }
+
+    // Extract shape text — look for "שולחן N" patterns
+    const allT=doc.getElementsByTagNameNS(ns,'t');
+    const texts=[];
+    for(const t of allT)if(t.textContent.trim())texts.push(t.textContent.trim());
+    const combined=texts.join(' ');
+    const matches=[...new Set((combined.match(/(?:שולחן|table)\s*[\d]+/gi)||[]))];
+    if(matches.length&&!tbls.length)results.push({type:'shapes',matches,slide:slideNum});
+  }
+  return results;
+}
+
+function _showPptxPreview(data){
+  const proposed=[];
+  for(const item of data){
+    if(item.type==='table'){
+      const rows=item.rows;
+      const isHeader=rows.length>1&&rows[0].some(c=>/שם|שולחן|מקומות|seats|name/i.test(c));
+      const dataRows=isHeader?rows.slice(1):rows;
+      for(const row of dataRows){
+        if(!row[0])continue;
+        let seats=10;
+        for(let i=1;i<row.length;i++){const n=parseInt(row[i]);if(!isNaN(n)&&n>0&&n<=50){seats=n;break;}}
+        proposed.push({name:row[0],seats,selected:true,source:`שקופית ${item.slide}`});
+      }
+    }else if(item.type==='shapes'){
+      for(const m of item.matches)
+        proposed.push({name:m.trim(),seats:10,selected:true,source:`שקופית ${item.slide} – טקסט`});
+    }
+  }
+  // Deduplicate
+  const seen=new Set();
+  const unique=proposed.filter(p=>{const k=p.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});
+  if(!unique.length){alert('לא נמצאו שולחנות בקובץ.\nודא שהקובץ מכיל טבלאות עם שמות שולחנות.');return;}
+  window._pptxProposed=unique;
+
+  document.getElementById('pptx-preview-content').innerHTML=`
+    <table class="pptx-table-preview">
+      <thead><tr><th></th><th>שם שולחן</th><th>מקומות</th><th>מקור</th></tr></thead>
+      <tbody>${unique.map((p,i)=>`
+        <tr>
+          <td><input type="checkbox" id="pcb${i}" ${p.selected?'checked':''} onchange="window._pptxProposed[${i}].selected=this.checked"/></td>
+          <td><input type="text" value="${p.name.replace(/"/g,'&quot;')}" onchange="window._pptxProposed[${i}].name=this.value"/></td>
+          <td><input type="number" value="${p.seats}" min="1" max="50" onchange="window._pptxProposed[${i}].seats=+this.value"/></td>
+          <td style="color:var(--text-dim);font-size:11px;">${p.source}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  openModal('pptxModal');
+}
+
+function importSelectedPptxTables(){
+  const toImport=(window._pptxProposed||[]).filter(p=>p.selected);
+  if(!toImport.length){alert('לא נבחרו שולחנות');return;}
+  let added=0,updated=0;
+  for(const p of toImport){
+    const ex=db.tables.find(t=>t.name.toLowerCase()===p.name.toLowerCase());
+    if(ex){ex.seats=p.seats;updated++;}
+    else{db.tables.push({id:Date.now()+Math.random(),name:p.name,seats:p.seats});added++;}
+  }
+  saveData();closeModal('pptxModal');renderSeating();
+  alert(`ייבוא הושלם ✓\n${added} שולחנות חדשים נוספו, ${updated} עודכנו`);
+}
+
+// ============================= GROUPS VIEW =============================
+function renderGroups(){
+  const groups={};
+  for(const g of db.guests){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
+  const grid=document.getElementById('groups-grid');
+  if(!Object.keys(groups).length){grid.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div>';return;}
+  grid.innerHTML=Object.entries(groups).map(([grp,guests])=>{
+    const color=groupColor(grp);
+    const total=guests.reduce((s,g)=>s+Number(g.count),0);
+    const seated=guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
+    return `<div class="group-card">
+      <div class="group-card-header">
+        <div class="group-card-title"><div class="group-dot" style="background:${color}"></div>${grp}</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="group-badge">${seated}/${total} שובצו</span>
+          <button class="btn btn-sm btn-outline" style="font-size:11px;padding:2px 8px;" onclick="openGroupAssign(${JSON.stringify(grp)})">שבץ</button>
+        </div>
+      </div>
+      <div class="group-guests-list">${guests.map(g=>`
+        <div class="group-guest-row">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="color:var(--text);font-size:12px;">${g.name}</span>
+            <span style="font-size:11px;color:var(--text-dim)">(${g.count})</span>
+          </div>
+          ${g.table?`<span class="seated-badge">🪑 ${g.table}</span>`:`<span class="unseated-badge">לא שובץ</span>`}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let _assignGroup=null;
+function openGroupAssign(group){
+  _assignGroup=group;
+  document.getElementById('ga-group-label').textContent=group;
+  document.getElementById('ga-table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
+  document.getElementById('ga-table').value='';
+  openModal('groupAssignModal');
+}
+function saveGroupAssignment(){
+  const tbl=document.getElementById('ga-table').value.trim();
+  if(!tbl){alert('נא לבחור שולחן');return;}
+  if(!_assignGroup)return;
+  db.guests.filter(g=>(g.group||'ללא קבוצה')===_assignGroup).forEach(g=>g.table=tbl);
+  saveData();closeModal('groupAssignModal');renderSeating();renderGroups();renderGuests();
+}
+
+// ============================= SMART VIEW =============================
+function renderSmartView(){
+  const groups={};
+  for(const g of db.guests.filter(g=>!g.table)){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
+  const unassignedTotal=Object.values(groups).flat().reduce((s,g)=>s+Number(g.count),0);
+  const panel=document.getElementById('unassigned-panel');
+
+  panel.innerHTML=`<div class="unassigned-panel-header">👥 לא משובצים (${unassignedTotal})</div>`+
+    (Object.keys(groups).length?Object.entries(groups).map(([grp,guests])=>{
+      const color=groupColor(grp);
+      const total=guests.reduce((s,g)=>s+Number(g.count),0);
+      const gid='ug'+btoa(unescape(encodeURIComponent(grp))).replace(/[^a-zA-Z0-9]/g,'');
+      return `<div class="unassigned-group">
+        <div class="unassigned-group-header" onclick="document.getElementById('${gid}').style.display=document.getElementById('${gid}').style.display==='none'?'':'none'">
+          <div class="unassigned-group-name"><div class="group-dot" style="background:${color}"></div>${grp}</div>
+          <span class="group-badge">${total}</span>
+        </div>
+        <div class="unassigned-group-guests" id="${gid}">
+          ${guests.map(g=>`<span class="uguest-chip" style="background:${color}22;color:${color};border-color:${color}44;" onclick="quickAssignGuest(${g.id})">${g.name} (${g.count})</span>`).join('')}
+          <button class="btn btn-sm btn-outline" style="font-size:10px;padding:2px 8px;margin-top:2px;width:100%;" onclick="openGroupAssign(${JSON.stringify(grp)})">שבץ כל הקבוצה →</button>
+        </div>
+      </div>`;
+    }).join(''):`<div style="padding:18px;color:var(--text-dim);font-size:13px;text-align:center;">🎉 כל האורחים שובצו!</div>`);
+
+  const grid=document.getElementById('smart-tables-grid');
+  if(!db.tables.length){grid.innerHTML=`<div class="empty-state"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;return;}
+  grid.innerHTML=db.tables.map(t=>{
+    const seated=db.guests.filter(g=>g.table===t.name);
+    const cnt=seated.reduce((s,g)=>s+Number(g.count),0);
+    const pct=t.seats>0?cnt/t.seats:0;
+    const barColor=pct>=1?'var(--danger)':pct>=0.8?'var(--gold)':'var(--success)';
+    return `<div class="table-block">
+      <div class="table-name">🪑 ${t.name}
+        <div style="float:left;display:flex;gap:4px;">
+          <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
+        </div>
+      </div>
+      <div style="height:3px;background:var(--surface2);border-radius:2px;margin:5px 0 8px;">
+        <div style="height:100%;width:${Math.min(100,Math.round(pct*100))}%;background:${barColor};border-radius:2px;transition:width .3s;"></div>
+      </div>
+      <div class="seats-list">
+        ${seated.map(g=>{const c=groupColor(g.group||'ללא קבוצה');return `<span class="seat-chip filled" style="background:${c}22;color:${c};cursor:pointer;" onclick="quickUnassignGuest(${g.id})" title="הסר שיבוץ">${g.name}</span>`;}).join('')}
+        ${Array.from({length:Math.max(0,Number(t.seats)-cnt)}).map(()=>`<span class="seat-chip" style="cursor:pointer;" onclick="quickDropToTable('${t.name.replace(/'/g,"\\'")}')">+</span>`).join('')}
+      </div>
+      <div class="table-count">${cnt} / ${t.seats} מקומות</div>
+    </div>`;
+  }).join('');
+}
+
+function quickAssignGuest(gid){
+  if(!db.tables.length){alert('הוסף שולחן תחילה');return;}
+  const sa=document.getElementById('sa-guest');
+  sa.innerHTML=db.guests.map(g=>`<option value="${g.id}"${g.id===gid?' selected':''}>${g.name} (${g.count} אורחים)</option>`).join('');
+  document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
+  document.getElementById('sa-table').value='';
+  document.getElementById('seatAssignModal').classList.add('open');
+}
+function quickUnassignGuest(guestId){
+  const g=db.guests.find(x=>x.id===guestId);
+  if(g&&confirm(`להסיר את ${g.name} מהשולחן?`)){g.table='';saveData();renderSeating();renderGuests();}
+}
+function quickDropToTable(tableName){
+  const unassigned=db.guests.filter(g=>!g.table);
+  if(!unassigned.length){alert('אין אורחים לא משובצים');return;}
+  document.getElementById('sa-guest').innerHTML=unassigned.map(g=>`<option value="${g.id}">${g.name} (${g.count} אורחים)</option>`).join('');
+  document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
+  document.getElementById('sa-table').value=tableName;
   document.getElementById('seatAssignModal').classList.add('open');
 }
 
