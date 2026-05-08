@@ -530,7 +530,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <select id="g-source"><option>Andrea</option><option>Tinko</option><option>משותף</option></select>
       </div>
       <div class="form-group"><label>סטטוס</label>
-        <select id="g-rsvp"><option value="אין מענה">אין מענה</option><option value="מגיעים">מגיעים</option><option value="מטלבתים">מטלבתים</option><option value="לא מגיעים">לא מגיעים</option></select>
+        <select id="g-rsvp"><option value="אין מענה">אין מענה</option><option value="מגיעים">מגיעים</option><option value="מתלבטים">מתלבטים</option><option value="לא מגיעים">לא מגיעים</option></select>
       </div>
       <div class="form-group"><label>הודעה</label>
         <select id="g-notified"><option value="לא נשלחה">לא נשלחה</option><option value="נשלחה">נשלחה</option></select>
@@ -899,7 +899,7 @@ function updateCountdown(){
 function fmt(n){ return (n||0).toLocaleString('he-IL'); }
 function badge(s){
   const m={'מאושר':'badge-green','שולם':'badge-green','שולם במלואו':'badge-green','אישר':'badge-green','מגיעים':'badge-green',
-    'בחינה':'badge-yellow','בבדיקה':'badge-yellow','ממתין':'badge-yellow','שולם חלקית':'badge-yellow','בינונית':'badge-yellow','מטלבתים':'badge-yellow',
+    'בחינה':'badge-yellow','בבדיקה':'badge-yellow','ממתין':'badge-yellow','שולם חלקית':'badge-yellow','בינונית':'badge-yellow','מתלבטים':'badge-yellow',
     'נדחה':'badge-red','ביטל':'badge-red','גבוהה':'badge-red','לא מגיעים':'badge-red',
     'לא שולם':'badge-gray','נמוכה':'badge-blue','אין מענה':'badge-gray'};
   return `<span class="badge ${m[s]||'badge-gray'}">${s}</span>`;
@@ -966,7 +966,7 @@ function renderOverview(){
   const totalA=db.budget.reduce((s,b)=>s+Number(b.actual),0);
   const totalG=db.guests.reduce((s,g)=>s+Number(g.count),0);
   const coming=db.guests.filter(g=>g.rsvp==='מגיעים').reduce((s,g)=>s+Number(g.count),0);
-  const tentative=db.guests.filter(g=>g.rsvp==='מטלבתים').reduce((s,g)=>s+Number(g.count),0);
+  const tentative=db.guests.filter(g=>g.rsvp==='מתלבטים').reduce((s,g)=>s+Number(g.count),0);
   const noAnswer=db.guests.filter(g=>g.rsvp==='אין מענה'||g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
   const notComing=db.guests.filter(g=>g.rsvp==='לא מגיעים'||g.rsvp==='ביטל').reduce((s,g)=>s+Number(g.count),0);
   const done=db.tasks.filter(t=>t.done).length;
@@ -976,7 +976,7 @@ function renderOverview(){
     <div class="stat-card"><div class="label">אורחים</div><div class="value">${totalG}</div>
       <div class="sub" style="display:flex;flex-direction:column;gap:2px;margin-top:4px;">
         <span style="color:var(--success)">✔ מגיעים: ${coming}</span>
-        <span style="color:var(--gold)">~ מטלבתים: ${tentative}</span>
+        <span style="color:var(--gold)">~ מתלבטים: ${tentative}</span>
         <span style="color:var(--text-dim)">? אין מענה: ${noAnswer}</span>
         <span style="color:var(--danger)">✘ לא מגיעים: ${notComing}</span>
       </div>
@@ -1082,11 +1082,11 @@ function renderGuests(){
   const coming=db.guests.filter(g=>g.rsvp==='מגיעים').reduce((s,g)=>s+Number(g.count),0);
   const notComing=db.guests.filter(g=>g.rsvp==='לא מגיעים').reduce((s,g)=>s+Number(g.count),0);
   const noAnswer=db.guests.filter(g=>g.rsvp==='אין מענה'||g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
-  const tentative=db.guests.filter(g=>g.rsvp==='מטלבתים').reduce((s,g)=>s+Number(g.count),0);
+  const tentative=db.guests.filter(g=>g.rsvp==='מתלבטים').reduce((s,g)=>s+Number(g.count),0);
   document.getElementById('guest-stats').innerHTML=`
     <div class="stat-card"><div class="label">סה"כ מוזמנים</div><div class="value">${total}</div></div>
     <div class="stat-card"><div class="label">מגיעים</div><div class="value" style="color:var(--success)">${coming}</div></div>
-    <div class="stat-card"><div class="label">מטלבתים</div><div class="value" style="color:var(--gold)">${tentative}</div></div>
+    <div class="stat-card"><div class="label">מתלבטים</div><div class="value" style="color:var(--gold)">${tentative}</div></div>
     <div class="stat-card"><div class="label">אין מענה</div><div class="value" style="color:var(--text-dim)">${noAnswer}</div></div>
     <div class="stat-card"><div class="label">לא מגיעים</div><div class="value" style="color:var(--danger)">${notComing}</div></div>`;
   document.getElementById('guests-body').innerHTML=list.length?list.map(g=>`
@@ -1724,7 +1724,7 @@ const IMPORT_SCHEMAS = {
       <span class="col-pill">שם אורח</span><span class="col-pill">טלפון</span><span class="col-pill">קבוצה</span>
       <span class="col-pill">סטטוס</span><span class="col-pill">מוזמנים</span><span class="col-pill">מגיעים</span>
       <span class="col-pill" style="background:rgba(201,168,76,.25);color:var(--gold)">שולחן</span><br>
-      <em>סטטוס: מגיעים / לא מגיעים / אין מענה / מטלבתים | אורח קיים לפי שם יעודכן, לא יכופל. <strong>שולחן</strong> — אופציונלי, מעדכן שיבוץ ישירות.</em>`,
+      <em>סטטוס: מגיעים / לא מגיעים / אין מענה / מתלבטים | אורח קיים לפי שם יעודכן, לא יכופל. <strong>שולחן</strong> — אופציונלי, מעדכן שיבוץ ישירות.</em>`,
     template:[['שם אורח','טלפון','קבוצה','סטטוס','מוזמנים','מגיעים','שולחן'],
               ['ישראל ישראלי','050-1234567','משפחת חתן','אין מענה',2,0,'']],
     map:(row)=>({id:Date.now()+Math.random(),
