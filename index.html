@@ -1185,8 +1185,8 @@ function renderSeating(){
   const g=document.getElementById('seating-grid');
   if(!db.tables.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;}
   else{g.innerHTML=db.tables.map(t=>{
-    const seated=db.guests.filter(g=>g.table===t.name);
-    const cnt=seated.reduce((s,g)=>s+Number(g.count),0);
+    const seated=db.guests.filter(g=>g.table===t.name&&g.rsvp==='מגיעים');
+    const cnt=seated.reduce((s,g)=>s+Number(g.arriving||0),0);
     return `<div class="table-block">
       <div class="table-name">🪑 ${t.name}
         <div style="float:left;display:flex;gap:4px;">
@@ -1245,7 +1245,7 @@ function assignSeat(){
 }
 function openSeatAssignModal(){
   if(!db.guests.length){alert('אין אורחים להציב. הוסף אורחים תחילה.');return;}
-  document.getElementById('sa-guest').innerHTML=db.guests.map(g=>`<option value="${g.id}">${g.name} (${g.count} אורחים)</option>`).join('');
+  document.getElementById('sa-guest').innerHTML=db.guests.filter(g=>g.rsvp==='מגיעים').map(g=>`<option value="${g.id}">${g.name} (${g.arriving||0} מגיעים)</option>`).join('');
   document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
   document.getElementById('sa-table').value='';
   document.getElementById('seatAssignModal').classList.add('open');
@@ -1378,7 +1378,7 @@ function importSelectedPptxTables(){
 // ============================= GROUPS VIEW =============================
 function renderGroups(){
   const groups={};
-  for(const g of db.guests){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
+  for(const g of db.guests.filter(g=>g.rsvp==='מגיעים')){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
   const grid=document.getElementById('groups-grid');
   if(!Object.keys(groups).length){grid.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div>';return;}
   grid.innerHTML=Object.entries(groups).map(([grp,guests])=>{
@@ -1425,7 +1425,7 @@ function saveGroupAssignment(){
 // ============================= SMART VIEW =============================
 function renderSmartView(){
   const groups={};
-  for(const g of db.guests.filter(g=>!g.table)){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
+  for(const g of db.guests.filter(g=>!g.table&&g.rsvp==='מגיעים')){const grp=g.group||'ללא קבוצה';if(!groups[grp])groups[grp]=[];groups[grp].push(g);}
   const unassignedTotal=Object.values(groups).flat().reduce((s,g)=>s+Number(g.arriving||0),0);
   const panel=document.getElementById('unassigned-panel');
 
@@ -1449,8 +1449,8 @@ function renderSmartView(){
   const grid=document.getElementById('smart-tables-grid');
   if(!db.tables.length){grid.innerHTML=`<div class="empty-state"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;return;}
   grid.innerHTML=db.tables.map(t=>{
-    const seated=db.guests.filter(g=>g.table===t.name);
-    const cnt=seated.reduce((s,g)=>s+Number(g.count),0);
+    const seated=db.guests.filter(g=>g.table===t.name&&g.rsvp==='מגיעים');
+    const cnt=seated.reduce((s,g)=>s+Number(g.arriving||0),0);
     const pct=t.seats>0?cnt/t.seats:0;
     const barColor=pct>=1?'var(--danger)':pct>=0.8?'var(--gold)':'var(--success)';
     return `<div class="table-block">
@@ -1475,7 +1475,7 @@ function renderSmartView(){
 function quickAssignGuest(gid){
   if(!db.tables.length){alert('הוסף שולחן תחילה');return;}
   const sa=document.getElementById('sa-guest');
-  sa.innerHTML=db.guests.map(g=>`<option value="${g.id}"${g.id===gid?' selected':''}>${g.name} (${g.count} אורחים)</option>`).join('');
+  sa.innerHTML=db.guests.filter(g=>g.rsvp==='מגיעים').map(g=>`<option value="${g.id}"${g.id===gid?' selected':''}>${g.name} (${g.arriving||0} מגיעים)</option>`).join('');
   document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
   document.getElementById('sa-table').value='';
   document.getElementById('seatAssignModal').classList.add('open');
@@ -1485,9 +1485,9 @@ function quickUnassignGuest(guestId){
   if(g&&confirm(`להסיר את ${g.name} מהשולחן?`)){g.table='';saveData();renderSeating();renderGuests();}
 }
 function quickDropToTable(tableName){
-  const unassigned=db.guests.filter(g=>!g.table);
-  if(!unassigned.length){alert('אין אורחים לא משובצים');return;}
-  document.getElementById('sa-guest').innerHTML=unassigned.map(g=>`<option value="${g.id}">${g.name} (${g.count} אורחים)</option>`).join('');
+  const unassigned=db.guests.filter(g=>!g.table&&g.rsvp==='מגיעים');
+  if(!unassigned.length){alert('אין אורחים מגיעים לא משובצים');return;}
+  document.getElementById('sa-guest').innerHTML=unassigned.map(g=>`<option value="${g.id}">${g.name} (${g.arriving||0} מגיעים)</option>`).join('');
   document.getElementById('table-list').innerHTML=db.tables.map(t=>`<option value="${t.name}">`).join('');
   document.getElementById('sa-table').value=tableName;
   document.getElementById('seatAssignModal').classList.add('open');
