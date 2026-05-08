@@ -310,7 +310,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div style="margin-top:22px;">
     <div class="cards-row" id="guest-stats"></div>
     <div class="table-card">
-      <table><thead><tr><th>קבוצה</th><th>מקור</th><th>שם</th><th>מוזמנים</th><th>הודעה</th><th>אישור</th><th>הערות</th><th>שולחן</th><th>פעולות</th></tr></thead>
+      <table><thead><tr><th>קבוצה</th><th>מקור</th><th>שם אורח</th><th>טלפון</th><th>מוזמנים</th><th>מגיעים</th><th>הודעה</th><th>סטטוס</th><th>הערות</th><th>שולחן</th><th>פעולות</th></tr></thead>
       <tbody id="guests-body"></tbody></table>
     </div>
   </div>
@@ -521,20 +521,22 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="modal">
     <h3>➕ אורח חדש</h3>
     <div class="form-grid">
+      <div class="form-group full"><label>שם אורח</label><input type="text" id="g-name"/></div>
+      <div class="form-group"><label>טלפון</label><input type="text" id="g-phone" placeholder="050-0000000"/></div>
       <div class="form-group"><label>קבוצה</label>
         <select id="g-group"><option>Familia</option><option>Amigos</option><option>Hijos</option><option>Work</option><option>אחר</option></select>
       </div>
       <div class="form-group"><label>מקור</label>
         <select id="g-source"><option>Andrea</option><option>Tinko</option><option>משותף</option></select>
       </div>
-      <div class="form-group full"><label>שם מלא</label><input type="text" id="g-name"/></div>
-      <div class="form-group"><label>מספר מוזמנים</label><input type="number" id="g-count" value="1" min="1"/></div>
-      <div class="form-group"><label>הודעה</label>
-        <select id="g-notified"><option value="נשלחה">נשלחה</option><option value="לא נשלחה">לא נשלחה</option></select>
-      </div>
-      <div class="form-group"><label>אישור</label>
+      <div class="form-group"><label>סטטוס</label>
         <select id="g-rsvp"><option value="ממתין">ממתין</option><option value="אישר">אישר</option><option value="ביטל">ביטל</option></select>
       </div>
+      <div class="form-group"><label>הודעה</label>
+        <select id="g-notified"><option value="לא נשלחה">לא נשלחה</option><option value="נשלחה">נשלחה</option></select>
+      </div>
+      <div class="form-group"><label>מוזמנים</label><input type="number" id="g-count" value="1" min="1"/></div>
+      <div class="form-group"><label>מגיעים</label><input type="number" id="g-arriving" value="0" min="0"/></div>
       <div class="form-group"><label>שולחן</label><input type="text" id="g-table" placeholder="לדוגמה: שולחן 5"/></div>
       <div class="form-group full"><label>הערות</label><input type="text" id="g-notes" placeholder="הערות נוספות..."/></div>
     </div>
@@ -1065,38 +1067,60 @@ function togglePartialPayment(){
 // ============================= GUESTS =============================
 function renderGuests(){
   const q=(document.getElementById('guest-search')||{}).value||'';
-  const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q)||(g.source||'').includes(q));
+  const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q)||(g.source||'').includes(q)||(g.phone||'').includes(q));
   const total=db.guests.reduce((s,g)=>s+Number(g.count),0);
+  const arriving=db.guests.reduce((s,g)=>s+Number(g.arriving||0),0);
   const conf=db.guests.filter(g=>g.rsvp==='אישר').reduce((s,g)=>s+Number(g.count),0);
   const pend=db.guests.filter(g=>g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
   const canc=db.guests.filter(g=>g.rsvp==='ביטל').reduce((s,g)=>s+Number(g.count),0);
   document.getElementById('guest-stats').innerHTML=`
     <div class="stat-card"><div class="label">סה"כ מוזמנים</div><div class="value">${total}</div></div>
+    <div class="stat-card"><div class="label">מגיעים</div><div class="value" style="color:var(--success)">${arriving}</div></div>
     <div class="stat-card"><div class="label">אישרו הגעה</div><div class="value" style="color:var(--success)">${conf}</div></div>
     <div class="stat-card"><div class="label">ממתינים</div><div class="value" style="color:var(--gold)">${pend}</div></div>
     <div class="stat-card"><div class="label">ביטלו</div><div class="value" style="color:var(--danger)">${canc}</div></div>`;
   document.getElementById('guests-body').innerHTML=list.length?list.map(g=>`
-    <tr><td>${g.group}</td><td>${g.source||'–'}</td><td><strong>${g.name}</strong></td><td>${g.count}</td>
-    <td>${badge(g.notified||'לא נשלחה')}</td><td>${badge(g.rsvp)}</td><td style="color:var(--text-dim)">${g.notes||'–'}</td>
-    <td>${g.table||'–'}</td><td>${actionBtns('editGuest','guests',g.id)}</td></tr>`).join('')
-    :`<tr><td colspan="9"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
+    <tr>
+      <td>${g.group}</td>
+      <td>${g.source||'–'}</td>
+      <td><strong>${g.name}</strong></td>
+      <td style="color:var(--text-dim)">${g.phone||'–'}</td>
+      <td>${g.count}</td>
+      <td style="color:var(--success)">${g.arriving||0}</td>
+      <td>${badge(g.notified||'לא נשלחה')}</td>
+      <td>${badge(g.rsvp)}</td>
+      <td style="color:var(--text-dim)">${g.notes||'–'}</td>
+      <td>${g.table||'–'}</td>
+      <td>${actionBtns('editGuest','guests',g.id)}</td>
+    </tr>`).join('')
+    :`<tr><td colspan="11"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
 }
 function editGuest(id){
   const g=db.guests.find(x=>x.id===id); if(!g)return; editingId=id;
-  document.getElementById('g-name').value=g.name; document.getElementById('g-group').value=g.group;
+  document.getElementById('g-name').value=g.name;
+  document.getElementById('g-phone').value=g.phone||'';
+  document.getElementById('g-group').value=g.group;
   document.getElementById('g-source').value=g.source||'Andrea';
-  document.getElementById('g-count').value=g.count;
-  document.getElementById('g-notified').value=g.notified||'לא נשלחה';
   document.getElementById('g-rsvp').value=g.rsvp;
-  document.getElementById('g-table').value=g.table||''; document.getElementById('g-notes').value=g.notes||'';
+  document.getElementById('g-notified').value=g.notified||'לא נשלחה';
+  document.getElementById('g-count').value=g.count;
+  document.getElementById('g-arriving').value=g.arriving||0;
+  document.getElementById('g-table').value=g.table||'';
+  document.getElementById('g-notes').value=g.notes||'';
   openModal('guestModal');
 }
 function saveGuest(){
-  const obj={name:document.getElementById('g-name').value.trim(),group:document.getElementById('g-group').value,
+  const obj={
+    name:document.getElementById('g-name').value.trim(),
+    phone:document.getElementById('g-phone').value.trim(),
+    group:document.getElementById('g-group').value,
     source:document.getElementById('g-source').value,
-    count:+document.getElementById('g-count').value||1,notified:document.getElementById('g-notified').value,
     rsvp:document.getElementById('g-rsvp').value,
-    table:document.getElementById('g-table').value.trim(),notes:document.getElementById('g-notes').value.trim()};
+    notified:document.getElementById('g-notified').value,
+    count:+document.getElementById('g-count').value||1,
+    arriving:+document.getElementById('g-arriving').value||0,
+    table:document.getElementById('g-table').value.trim(),
+    notes:document.getElementById('g-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
   if(editingId){Object.assign(db.guests.find(x=>x.id===editingId),obj);}else{obj.id=Date.now();db.guests.push(obj);}
   saveData();closeModal('guestModal');renderGuests();renderOverview();renderSeating();
@@ -1688,18 +1712,23 @@ const IMPORT_SCHEMAS = {
   },
   guests:{
     title:'📥 ייבוא אורחים ושיבוץ לשולחנות',
-    hint:`<strong>עמודות נדרשות:</strong><br>
-      <span class="col-pill">שם</span><span class="col-pill">קבוצה</span>
-      <span class="col-pill">מוזמנים</span><span class="col-pill">אישור הגעה</span>
-      <span class="col-pill">הערות</span><span class="col-pill" style="background:rgba(201,168,76,.25);color:var(--gold)">שולחן</span><br>
-      <em>אישור הגעה: אישר / ממתין / ביטל | אורח קיים לפי שם — יעודכן, לא יכופל. עמודת <strong>שולחן</strong> מעדכנת את השיבוץ ישירות.</em>`,
-    template:[['שם','קבוצה','מוזמנים','אישור הגעה','הערות','שולחן'],
-              ['ישראל ישראלי','משפחת חתן',2,'ממתין','','שולחן 1']],
+    hint:`<strong>עמודות:</strong><br>
+      <span class="col-pill">שם אורח</span><span class="col-pill">טלפון</span><span class="col-pill">קבוצה</span>
+      <span class="col-pill">סטטוס</span><span class="col-pill">מוזמנים</span><span class="col-pill">מגיעים</span>
+      <span class="col-pill" style="background:rgba(201,168,76,.25);color:var(--gold)">שולחן</span><br>
+      <em>סטטוס: אישר / ממתין / ביטל | אורח קיים לפי שם יעודכן, לא יכופל. <strong>שולחן</strong> — אופציונלי, מעדכן שיבוץ ישירות.</em>`,
+    template:[['שם אורח','טלפון','קבוצה','סטטוס','מוזמנים','מגיעים','שולחן'],
+              ['ישראל ישראלי','050-1234567','משפחת חתן','ממתין',2,0,'']],
     map:(row)=>({id:Date.now()+Math.random(),
-      name:row['שם']||'',group:row['קבוצה']||'אחר',count:+row['מוזמנים']||1,
-      rsvp:row['אישור הגעה']||'ממתין',notes:row['הערות']||'',table:row['שולחן']||'',
-      notified:'לא נשלחה',source:''}),
-    validate:(r)=>r['שם'],
+      name:String(row['שם אורח']||'').trim(),
+      phone:String(row['טלפון']||'').trim(),
+      group:row['קבוצה']||'אחר',
+      rsvp:row['סטטוס']||'ממתין',
+      count:+row['מוזמנים']||1,
+      arriving:+row['מגיעים']||0,
+      table:String(row['שולחן']||'').trim(),
+      notified:'לא נשלחה',source:'',notes:''}),
+    validate:(r)=>r['שם אורח'],
     collection:'guests'
   },
   tasks:{
@@ -1892,8 +1921,8 @@ function exportSection(section){
       ...db.budget.map(b=>[b.cat,b.desc,b.planned,b.actual,b.planned-b.actual,b.status])];
   }else if(section==='guests'){
     title='אורחים';
-    data=[['קבוצה','מקור','שם','מוזמנים','הודעה','אישור','הערות','שולחן'],
-      ...db.guests.map(g=>[g.group,g.source,g.name,g.count,g.notified,g.rsvp,g.notes,g.table])];
+    data=[['שם אורח','טלפון','קבוצה','סטטוס','מוזמנים','מגיעים','שולחן','מקור','הודעה','הערות'],
+      ...db.guests.map(g=>[g.name,g.phone||'',g.group,g.rsvp,g.count,g.arriving||0,g.table||'',g.source||'',g.notified||'',g.notes||''])];
   }else if(section==='tasks'){
     title='משימות';
     data=[['משימה','קטגוריה','תאריך','עדיפות','סטטוס'],
