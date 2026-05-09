@@ -1229,11 +1229,11 @@ function renderFloorMap(){
   }).map(s=>{
     const safe=s.txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
     const fz=Math.min(s.cy*0.18,100000);
-    const fill=s.fillHex&&s.fillHex!=='none'?s.fillHex+'18':'rgba(255,255,255,0.04)';
-    const stroke=s.fillHex&&s.fillHex!=='none'?s.fillHex+'40':'rgba(255,255,255,0.1)';
+    const fill=s.fillHex&&s.fillHex!=='none'?s.fillHex+'22':'rgba(0,0,0,0.04)';
+    const stroke=s.fillHex&&s.fillHex!=='none'?s.fillHex+'66':'rgba(0,0,0,0.12)';
     const r=Math.min(s.cx,s.cy)*0.08;
     return `<rect x="${s.x}" y="${s.y}" width="${s.cx}" height="${s.cy}" rx="${r}" fill="${fill}" stroke="${stroke}" stroke-width="12000"/>
-      <text x="${s.x+s.cx/2}" y="${s.y+s.cy/2}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.35)" font-size="${fz}" font-family="Heebo,Arial,sans-serif">${safe}</text>`;
+      <text x="${s.x+s.cx/2}" y="${s.y+s.cy/2}" text-anchor="middle" dominant-baseline="middle" fill="rgba(0,0,0,0.4)" font-size="${fz}" font-family="Heebo,Arial,sans-serif">${safe}</text>`;
   }).join('');
   // Table circles
   const circlesSvg=db.tables.map(t=>{
@@ -1260,7 +1260,7 @@ function renderFloorMap(){
   el.innerHTML=`<div class="map-layout">
     <div class="map-canvas-wrap">
       <svg class="map-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${W}" height="${H}" fill="#0f1014"/>
+        <rect width="${W}" height="${H}" fill="#ffffff"/>
         ${areasSvg}
         ${circlesSvg}
       </svg>
