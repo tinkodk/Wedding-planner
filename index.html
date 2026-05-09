@@ -1194,27 +1194,43 @@ function saveTask(){
 }
 
 // ============================= SEATING =============================
+function _isDark(hex){if(!hex||hex==='none')return false;const c=parseInt(hex.replace('#',''),16);const r=(c>>16)&255,g=(c>>8)&255,b=c&255;return(r*299+g*587+b*114)/1000<128;}
 function renderFloorMap(){
   const el=document.getElementById('sv-map');
-  if(!db.floorPlanImage){el.innerHTML='<div class="empty-state" style="margin-top:40px"><div class="icon">🖼️</div><p>ייבא קובץ PPTX כדי לראות את מפת האולם</p></div>';return;}
+  if(!db.floorPlanShapes||!db.floorPlanDims){el.innerHTML='<div class="empty-state" style="margin-top:40px"><div class="icon">🖼️</div><p>ייבא קובץ PPTX כדי לראות את מפת האולם</p></div>';return;}
+  const {cx:W,cy:H}=db.floorPlanDims;
   const positions=db.tablePositions||{};
   const guestsByTable={};
-  for(const g of db.guests.filter(g=>g.table&&g.rsvp==='מגיעים')){
-    if(!guestsByTable[g.table])guestsByTable[g.table]=[];
-    guestsByTable[g.table].push(g.name);
-  }
+  for(const g of db.guests.filter(g=>g.table&&g.rsvp==='מגיעים')){if(!guestsByTable[g.table])guestsByTable[g.table]=[];guestsByTable[g.table].push(g.name);}
+  const svgShapes=db.floorPlanShapes.map(s=>{
+    const fill=(!s.fillHex||s.fillHex==='none')?'none':s.fillHex;
+    const stroke=fill==='none'?'rgba(120,120,120,0.25)':'none';
+    const isEllipse=/^ellipse/i.test(s.geom)||s.geom==='oval';
+    let shEl;
+    if(isEllipse){
+      const rx=s.cx/2,ry=s.cy/2;
+      shEl=`<ellipse cx="${s.x+rx}" cy="${s.y+ry}" rx="${rx}" ry="${ry}" fill="${fill}" stroke="${stroke}" stroke-width="8000"/>`;
+    }else{
+      const r=s.geom==='roundRect'?Math.min(s.cx,s.cy)*0.12:0;
+      shEl=`<rect x="${s.x}" y="${s.y}" width="${s.cx}" height="${s.cy}" rx="${r}" fill="${fill}" stroke="${stroke}" stroke-width="8000"/>`;
+    }
+    if(!s.txt)return shEl;
+    const fc=s.fontHex||(fill!=='none'&&_isDark(fill)?'#ffffff':'#111111');
+    const fz=s.fontSz>0?s.fontSz*127:Math.min(s.cy*0.55,160000);
+    const safe=s.txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return shEl+`<text x="${s.x+s.cx/2}" y="${s.y+s.cy/2}" text-anchor="middle" dominant-baseline="middle" fill="${fc}" font-size="${fz}" font-family="Heebo,Arial,sans-serif" font-weight="600">${safe}</text>`;
+  }).join('');
   const pins=db.tables.map(t=>{
-    const pos=positions[t.name];
-    if(!pos)return '';
+    const pos=positions[t.name];if(!pos)return '';
     const guests=guestsByTable[t.name]||[];
     const gHtml=guests.length?guests.map(n=>`<span class="pin-guest-name">${n}</span>`).join(''):`<span style="color:var(--text-dim);font-style:italic;font-size:9px">ריק</span>`;
     return `<div class="table-pin" style="left:${pos.pctX.toFixed(2)}%;top:${pos.pctY.toFixed(2)}%"><div class="pin-num">${t.name.replace('שולחן ','')}</div><div class="pin-guests">${gHtml}</div></div>`;
   }).join('');
-  el.innerHTML=`<div class="floor-map-wrap"><img src="${db.floorPlanImage}" />${pins}</div>`;
+  el.innerHTML=`<div class="floor-map-wrap" style="position:relative;margin-top:18px"><svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;border-radius:10px;" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f5f5f5"/>${svgShapes}</svg><div style="position:absolute;inset:0;">${pins}</div></div>`;
 }
 function renderSeating(){
   const mapTab=document.getElementById('stab-map');
-  if(mapTab)mapTab.style.display=db.floorPlanImage?'':'none';
+  if(mapTab)mapTab.style.display=(db.floorPlanShapes&&db.floorPlanShapes.length)?'':'none';
   const total=db.tables.reduce((s,t)=>s+Number(t.seats),0);
   const assigned=db.guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
   const groups=[...new Set(db.guests.map(g=>g.group).filter(Boolean))].length;
@@ -1330,75 +1346,68 @@ function triggerPptxImport(){
 
 async function _parsePptx(file){
   const zip=await JSZip.loadAsync(file);
-  window._pptxThumbnail=null;
-  for(const tp of ['docProps/thumbnail.jpeg','docProps/thumbnail.jpg','docProps/thumbnail.png']){
-    if(zip.files[tp]){
-      const b64=await zip.files[tp].async('base64');
-      const mime=tp.endsWith('.png')?'image/png':'image/jpeg';
-      window._pptxThumbnail=`data:${mime};base64,${b64}`;
-      break;
-    }
-  }
-  // Get slide dimensions for percentage-based positioning
+  const ns='http://schemas.openxmlformats.org/drawingml/2006/main';
+  const pns='http://schemas.openxmlformats.org/presentationml/2006/main';
+  const _G=(el,nsUri,local)=>{const r=el.getElementsByTagNameNS(nsUri,local);return r.length?r:el.getElementsByTagName(local);};
+  const _clr=(el)=>{
+    const sf=_G(el,ns,'solidFill')[0];if(!sf)return null;
+    const rgb=_G(sf,ns,'srgbClr')[0];if(rgb)return '#'+rgb.getAttribute('val');
+    const sc=_G(sf,ns,'schemeClr')[0];if(!sc)return null;
+    return {dk1:'#000000',lt1:'#ffffff',dk2:'#17375e',lt2:'#eeece1',accent1:'#4f81bd',accent2:'#c0504d',accent3:'#9bbb59',accent4:'#8064a2',accent5:'#4bacc6',accent6:'#f79646',bg1:'#ffffff',bg2:'#eeece1',tx1:'#000000',tx2:'#17375e'}[sc.getAttribute('val')]||null;
+  };
+  // Slide dimensions
   let slideCx=9144000,slideCy=6858000;
   try{
-    const presXml=await zip.files['ppt/presentation.xml'].async('text');
-    const presDoc=new DOMParser().parseFromString(presXml,'application/xml');
+    const presDoc=new DOMParser().parseFromString(await zip.files['ppt/presentation.xml'].async('text'),'application/xml');
     const sz=presDoc.getElementsByTagName('p:sldSz')[0]||presDoc.getElementsByTagName('sldSz')[0];
     if(sz){slideCx=+sz.getAttribute('cx')||slideCx;slideCy=+sz.getAttribute('cy')||slideCy;}
   }catch(e){}
   window._pptxSlideDims={cx:slideCx,cy:slideCy};
-  const ns='http://schemas.openxmlformats.org/drawingml/2006/main';
   const slideFiles=Object.keys(zip.files)
     .filter(f=>/^ppt\/slides\/slide\d+\.xml$/.test(f))
     .sort((a,b)=>(+a.match(/\d+/)[0])-(+b.match(/\d+/)[0]));
-
   const results=[];
+  window._pptxSvgShapes=[];
   for(const sf of slideFiles){
-    const xml=await zip.files[sf].async('text');
-    const doc=new DOMParser().parseFromString(xml,'application/xml');
+    const doc=new DOMParser().parseFromString(await zip.files[sf].async('text'),'application/xml');
     const slideNum=sf.match(/\d+/)[0];
-
-    // Extract PPTX table elements
+    const isFirst=slideNum==='1';
+    // PPTX table elements
     const tbls=doc.getElementsByTagNameNS(ns,'tbl');
     for(const tbl of tbls){
       const rows=[];
       for(const tr of tbl.getElementsByTagNameNS(ns,'tr')){
         const cells=[];
-        for(const tc of tr.getElementsByTagNameNS(ns,'tc')){
-          let txt='';
-          for(const t of tc.getElementsByTagNameNS(ns,'t'))txt+=t.textContent;
-          cells.push(txt.trim());
-        }
+        for(const tc of tr.getElementsByTagNameNS(ns,'tc')){let txt='';for(const t of tc.getElementsByTagNameNS(ns,'t'))txt+=t.textContent;cells.push(txt.trim());}
         if(cells.some(c=>c))rows.push(cells);
       }
       if(rows.length)results.push({type:'table',rows,slide:slideNum});
     }
-
-    // Strategy 2: Floor-plan — number shapes + nearest "X אורחים" shapes
     if(!tbls.length){
-      const pns='http://schemas.openxmlformats.org/presentationml/2006/main';
-      // Use namespace-aware lookup first, fall back to tag-name-only for compatibility
-      const _getByTag=(el,nsUri,local)=>{
-        const r=el.getElementsByTagNameNS(nsUri,local);
-        return r.length?r:el.getElementsByTagName(local);
-      };
       const shapes=[];
-      const spList=_getByTag(doc,pns,'sp');
-      for(const sp of spList){
-        const xfrmList=_getByTag(sp,ns,'xfrm');
-        if(!xfrmList.length)continue;
+      for(const sp of _G(doc,pns,'sp')){
+        const xfrmList=_G(sp,ns,'xfrm');if(!xfrmList.length)continue;
         const xfrm=xfrmList[0];
-        const offList=_getByTag(xfrm,ns,'off');
-        if(!offList.length)continue;
-        const extList=_getByTag(xfrm,ns,'ext');
-        const off=offList[0],ext=extList[0];
-        const cx=ext?+ext.getAttribute('cx'):0,cy2=ext?+ext.getAttribute('cy'):0;
-        const x=+off.getAttribute('x')+cx/2,y=+off.getAttribute('y')+cy2/2;
+        const offL=_G(xfrm,ns,'off');if(!offL.length)continue;
+        const extL=_G(xfrm,ns,'ext');
+        const off=offL[0],ext=extL[0];
+        const shW=ext?+ext.getAttribute('cx'):0,shH=ext?+ext.getAttribute('cy'):0;
+        const shX=+off.getAttribute('x'),shY=+off.getAttribute('y');
         const parts=[];
-        for(const t of _getByTag(sp,ns,'t'))if(t.textContent.trim())parts.push(t.textContent.trim());
+        for(const t of _G(sp,ns,'t'))if(t.textContent.trim())parts.push(t.textContent.trim());
         const txt=parts.join('').replace(/\s+/g,' ').trim();
-        if(txt)shapes.push({x,y,txt});
+        shapes.push({x:shX+shW/2,y:shY+shH/2,txt});
+        if(isFirst){
+          const geomEl=_G(sp,ns,'prstGeom')[0];
+          const geom=geomEl?(geomEl.getAttribute('prst')||'rect'):'rect';
+          const spPr=_G(sp,ns,'spPr')[0];
+          let fillHex=null;
+          if(spPr){if(_G(spPr,ns,'noFill').length)fillHex='none';else fillHex=_clr(spPr);}
+          const rPrs=_G(sp,ns,'rPr');
+          let fontHex=null,fontSz=0;
+          for(const rPr of rPrs){if(!fontHex)fontHex=_clr(rPr);if(!fontSz&&rPr.getAttribute('sz'))fontSz=+rPr.getAttribute('sz');}
+          window._pptxSvgShapes.push({x:shX,y:shY,cx:shW,cy:shH,txt,geom,fillHex,fontHex,fontSz});
+        }
       }
       const tableNums=shapes.filter(s=>/^\d+$/.test(s.txt)&&+s.txt>=1&&+s.txt<=99);
       const seatShapes=shapes.filter(s=>/^(\d+)\s*אורחים$/.test(s.txt));
@@ -1408,16 +1417,12 @@ async function _parsePptx(file){
           for(const sc of seatShapes){const d=Math.sqrt((tbl.x-sc.x)**2+(tbl.y-sc.y)**2);if(d<bestDist){bestDist=d;best=sc;}}
           const seatsMatch=best&&best.txt.match(/(\d+)/);
           const seats=seatsMatch?+seatsMatch[1]:8;
-          const pctX=(tbl.x/slideCx)*100,pctY=(tbl.y/slideCy)*100;
-          results.push({type:'floor-plan',name:`שולחן ${tbl.txt}`,seats,slide:slideNum,pctX,pctY});
+          results.push({type:'floor-plan',name:`שולחן ${tbl.txt}`,seats,slide:slideNum,pctX:(tbl.x/slideCx)*100,pctY:(tbl.y/slideCy)*100});
         }
-      } else {
-        // Fallback: look for "שולחן N" text patterns
-        const allT=_getByTag(doc,ns,'t');
-        const texts=[];
+      }else{
+        const allT=_G(doc,ns,'t');const texts=[];
         for(const t of allT)if(t.textContent.trim())texts.push(t.textContent.trim());
-        const combined=texts.join(' ');
-        const matches=[...new Set((combined.match(/(?:שולחן|table)\s*[\d]+/gi)||[]))];
+        const matches=[...new Set((texts.join(' ').match(/(?:שולחן|table)\s*[\d]+/gi)||[]))];
         if(matches.length)results.push({type:'shapes',matches,slide:slideNum});
       }
     }
@@ -1478,10 +1483,11 @@ function importSelectedPptxTables(){
   db.tables=db.tables.filter(t=>!isNumbered(t.name));
   for(const p of toImport)
     db.tables.push({id:Date.now()+Math.random(),name:p.name,seats:p.seats});
-  if(window._pptxThumbnail)db.floorPlanImage=window._pptxThumbnail;
   const pos={};
   for(const p of toImport)if(p.pctX!=null)pos[p.name]={pctX:p.pctX,pctY:p.pctY};
   db.tablePositions=pos;
+  if(window._pptxSvgShapes)db.floorPlanShapes=window._pptxSvgShapes;
+  if(window._pptxSlideDims)db.floorPlanDims=window._pptxSlideDims;
   saveData();closeModal('pptxModal');renderSeating();
   alert(`ייבוא הושלם ✓\n${toImport.length} שולחנות עודכנו מהתוכנית`);
 }
