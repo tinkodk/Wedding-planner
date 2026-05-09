@@ -1408,11 +1408,11 @@ function _showPptxPreview(data){
         </tr>`).join('')}
       </tbody>
     </table>`;
+  openModal('pptxModal');
   unique.forEach((p,i)=>{
     document.getElementById(`pname${i}`).value=p.name;
     document.getElementById(`pseats${i}`).value=p.seats;
   });
-  openModal('pptxModal');
 }
 
 function importSelectedPptxTables(){
