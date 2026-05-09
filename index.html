@@ -140,14 +140,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .seating-tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:all .15s;}
 .seating-tab:hover{color:var(--text);}
 .seating-tab.active{background:rgba(201,168,76,.15);color:var(--gold);border-color:var(--gold-dim);}
-/* FLOOR MAP VIEW */
-.floor-map-wrap{position:relative;display:block;width:100%;line-height:0;margin-top:18px;}
-.floor-map-wrap img{width:100%;border-radius:10px;display:block;}
-.table-pin{position:absolute;transform:translate(-50%,-50%);background:rgba(13,13,15,.9);border:1.5px solid var(--gold);border-radius:7px;padding:5px 8px;min-width:62px;max-width:150px;cursor:default;z-index:2;direction:rtl;}
-.table-pin:hover{z-index:10;background:rgba(13,13,15,.98);min-width:120px;}
-.pin-num{color:var(--gold);font-weight:700;font-size:13px;text-align:center;line-height:1;}
-.pin-guests{color:#ccc;font-size:10px;line-height:1.4;margin-top:3px;}
-.pin-guest-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* MAP VIEW */
+.map-layout{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-top:18px;align-items:start;}
+.map-canvas-wrap{position:relative;border-radius:12px;overflow:hidden;}
+.map-svg{width:100%;display:block;}
+.map-tbl{cursor:pointer;}
+.map-tbl circle{transition:filter .15s;}
+.map-tbl:hover circle{filter:brightness(1.25);}
+.map-side{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:sticky;top:20px;min-height:160px;}
+.map-side-empty{color:var(--text-dim);text-align:center;padding:36px 0;font-size:13px;line-height:1.6;}
+.map-panel-name{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:2px;}
+.map-panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:12px;}
+.map-panel-bar-bg{background:var(--surface3);border-radius:4px;height:5px;margin-bottom:4px;overflow:hidden;}
+.map-panel-bar{height:100%;border-radius:4px;background:var(--gold);transition:width .4s;}
+.map-panel-tally{font-size:12px;color:var(--text-dim);margin-bottom:14px;}
+.map-guest-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:7px 10px;background:var(--surface3);border-radius:7px;margin-bottom:5px;}
+.map-guest-arr{font-size:11px;color:var(--text-dim);}
+.map-guests-scroll{max-height:calc(100vh - 420px);overflow-y:auto;}
 /* GROUPS VIEW */
 .groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:13px;margin-top:18px;}
 .group-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
@@ -1194,39 +1203,101 @@ function saveTask(){
 }
 
 // ============================= SEATING =============================
-function _isDark(hex){if(!hex||hex==='none')return false;const c=parseInt(hex.replace('#',''),16);const r=(c>>16)&255,g=(c>>8)&255,b=c&255;return(r*299+g*587+b*114)/1000<128;}
+let _mapSel=null;
 function renderFloorMap(){
   const el=document.getElementById('sv-map');
-  if(!db.floorPlanShapes||!db.floorPlanDims){el.innerHTML='<div class="empty-state" style="margin-top:40px"><div class="icon">🖼️</div><p>ייבא קובץ PPTX כדי לראות את מפת האולם</p></div>';return;}
+  const pos=db.tablePositions||{};
+  if(!db.floorPlanDims||!Object.keys(pos).length){
+    el.innerHTML='<div class="empty-state" style="margin-top:40px"><div class="icon">🖼️</div><p>ייבא קובץ PPTX כדי לראות את מפת האולם</p></div>';
+    return;
+  }
   const {cx:W,cy:H}=db.floorPlanDims;
-  const positions=db.tablePositions||{};
-  const guestsByTable={};
-  for(const g of db.guests.filter(g=>g.table&&g.rsvp==='מגיעים')){if(!guestsByTable[g.table])guestsByTable[g.table]=[];guestsByTable[g.table].push(g.name);}
-  const svgShapes=db.floorPlanShapes.map(s=>{
-    const fill=(!s.fillHex||s.fillHex==='none')?'none':s.fillHex;
-    const stroke=fill==='none'?'rgba(120,120,120,0.25)':'none';
-    const isEllipse=/^ellipse/i.test(s.geom)||s.geom==='oval';
-    let shEl;
-    if(isEllipse){
-      const rx=s.cx/2,ry=s.cy/2;
-      shEl=`<ellipse cx="${s.x+rx}" cy="${s.y+ry}" rx="${rx}" ry="${ry}" fill="${fill}" stroke="${stroke}" stroke-width="8000"/>`;
-    }else{
-      const r=s.geom==='roundRect'?Math.min(s.cx,s.cy)*0.12:0;
-      shEl=`<rect x="${s.x}" y="${s.y}" width="${s.cx}" height="${s.cy}" rx="${r}" fill="${fill}" stroke="${stroke}" stroke-width="8000"/>`;
-    }
-    if(!s.txt)return shEl;
-    const fc=s.fontHex||(fill!=='none'&&_isDark(fill)?'#ffffff':'#111111');
-    const fz=s.fontSz>0?s.fontSz*127:Math.min(s.cy*0.55,160000);
-    const safe=s.txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return shEl+`<text x="${s.x+s.cx/2}" y="${s.y+s.cy/2}" text-anchor="middle" dominant-baseline="middle" fill="${fc}" font-size="${fz}" font-family="Heebo,Arial,sans-serif" font-weight="600">${safe}</text>`;
+  const R=Math.min(W/24,H/18);
+  // Guest tallies
+  const byTable={};
+  for(const g of db.guests.filter(g=>g.table&&g.rsvp==='מגיעים')){
+    if(!byTable[g.table])byTable[g.table]=[];
+    byTable[g.table].push(g);
+  }
+  // Venue context areas (non-table shapes above size threshold)
+  const shapes=db.floorPlanShapes||[];
+  const areasSvg=shapes.filter(s=>{
+    if(!s.txt)return false;
+    const t=s.txt.trim();
+    if(/^\d+$/.test(t)||/^\d+\s*אורחים$/.test(t))return false;
+    return s.cx>300000&&s.cy>200000;
+  }).map(s=>{
+    const safe=s.txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const fz=Math.min(s.cy*0.18,100000);
+    const fill=s.fillHex&&s.fillHex!=='none'?s.fillHex+'18':'rgba(255,255,255,0.04)';
+    const stroke=s.fillHex&&s.fillHex!=='none'?s.fillHex+'40':'rgba(255,255,255,0.1)';
+    const r=Math.min(s.cx,s.cy)*0.08;
+    return `<rect x="${s.x}" y="${s.y}" width="${s.cx}" height="${s.cy}" rx="${r}" fill="${fill}" stroke="${stroke}" stroke-width="12000"/>
+      <text x="${s.x+s.cx/2}" y="${s.y+s.cy/2}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.35)" font-size="${fz}" font-family="Heebo,Arial,sans-serif">${safe}</text>`;
   }).join('');
-  const pins=db.tables.map(t=>{
-    const pos=positions[t.name];if(!pos)return '';
-    const guests=guestsByTable[t.name]||[];
-    const gHtml=guests.length?guests.map(n=>`<span class="pin-guest-name">${n}</span>`).join(''):`<span style="color:var(--text-dim);font-style:italic;font-size:9px">ריק</span>`;
-    return `<div class="table-pin" style="left:${pos.pctX.toFixed(2)}%;top:${pos.pctY.toFixed(2)}%"><div class="pin-num">${t.name.replace('שולחן ','')}</div><div class="pin-guests">${gHtml}</div></div>`;
+  // Table circles
+  const circlesSvg=db.tables.map(t=>{
+    const p=pos[t.name];if(!p)return '';
+    const cx=(p.pctX/100)*W,cy=(p.pctY/100)*H;
+    const guests=byTable[t.name]||[];
+    const arr=guests.reduce((s,g)=>s+Number(g.arriving||0),0);
+    const pct=t.seats>0?Math.min(arr/t.seats,1):0;
+    const isSel=_mapSel===t.name;
+    const alpha=pct===0?0.07:0.12+pct*0.78;
+    const fill=`rgba(201,168,76,${alpha.toFixed(2)})`;
+    const stroke=isSel?'#ffffff':pct===0?'rgba(201,168,76,0.28)':'#c9a84c';
+    const sw=isSel?R*0.08:R*0.04;
+    const numClr=pct>0.65?'#1a1208':'#e8c96a';
+    const subClr=pct>0.65?'rgba(0,0,0,0.55)':'rgba(201,168,76,0.55)';
+    const num=t.name.replace(/שולחן\s*/,'');
+    const safeName=t.name.replace(/'/g,"\\'");
+    return `<g class="map-tbl" onclick="selectMapTable('${safeName}')" id="mtbl_${num}">
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+      <text x="${cx}" y="${cy-R*0.12}" text-anchor="middle" dominant-baseline="middle" fill="${numClr}" font-size="${R*0.9}" font-family="Heebo,Arial,sans-serif" font-weight="800">${num}</text>
+      <text x="${cx}" y="${cy+R*0.52}" text-anchor="middle" dominant-baseline="middle" fill="${subClr}" font-size="${R*0.36}" font-family="Heebo,Arial,sans-serif">${arr}/${t.seats}</text>
+    </g>`;
   }).join('');
-  el.innerHTML=`<div class="floor-map-wrap" style="position:relative;margin-top:18px"><svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;border-radius:10px;" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f5f5f5"/>${svgShapes}</svg><div style="position:absolute;inset:0;">${pins}</div></div>`;
+  el.innerHTML=`<div class="map-layout">
+    <div class="map-canvas-wrap">
+      <svg class="map-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${W}" height="${H}" fill="#0f1014"/>
+        ${areasSvg}
+        ${circlesSvg}
+      </svg>
+    </div>
+    <div class="map-side" id="map-side">
+      <div class="map-side-empty">לחץ על שולחן<br>לצפייה בפרטים</div>
+    </div>
+  </div>`;
+  if(_mapSel)_renderMapSide(_mapSel);
+}
+function selectMapTable(name){
+  _mapSel=name;
+  // Update circle visuals without full re-render
+  document.querySelectorAll('.map-tbl circle').forEach(c=>{
+    const g=c.closest('g');
+    const tName='שולחן '+g.id.replace('mtbl_','');
+    const isSel=tName===name;
+    c.setAttribute('stroke',isSel?'#ffffff':c.getAttribute('stroke').includes('fff')?'rgba(201,168,76,0.28)':c.getAttribute('stroke'));
+  });
+  _renderMapSide(name);
+}
+function _renderMapSide(name){
+  const panel=document.getElementById('map-side');if(!panel)return;
+  const t=db.tables.find(t=>t.name===name);if(!t){panel.innerHTML='';return;}
+  const guests=db.guests.filter(g=>g.table===name&&g.rsvp==='מגיעים');
+  const arr=guests.reduce((s,g)=>s+Number(g.arriving||0),0);
+  const pct=t.seats>0?Math.round(arr/t.seats*100):0;
+  const rows=guests.length
+    ?guests.map(g=>`<div class="map-guest-row"><span>${g.name}</span><span class="map-guest-arr">${g.arriving||0} מגיעים</span></div>`).join('')
+    :`<div style="color:var(--text-dim);font-style:italic;font-size:13px;padding:6px 0">אין אורחים משובצים עדיין</div>`;
+  panel.innerHTML=`
+    <div class="map-panel-name">${name}</div>
+    <div class="map-panel-sub">${t.seats} מקומות ישיבה</div>
+    <div class="map-panel-bar-bg"><div class="map-panel-bar" style="width:${pct}%"></div></div>
+    <div class="map-panel-tally">${arr} / ${t.seats} משובצים (${pct}%)</div>
+    <div class="map-guests-scroll">${rows}</div>
+    <button class="btn btn-gold" style="width:100%;margin-top:14px" onclick="openModal('seatAssignModal')">+ שבץ אורח לשולחן</button>`;
 }
 function renderSeating(){
   const mapTab=document.getElementById('stab-map');
