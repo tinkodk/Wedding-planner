@@ -1418,14 +1418,13 @@ function _showPptxPreview(data){
 function importSelectedPptxTables(){
   const toImport=(window._pptxProposed||[]).filter(p=>p.selected);
   if(!toImport.length){alert('לא נבחרו שולחנות');return;}
-  let added=0,updated=0;
-  for(const p of toImport){
-    const ex=db.tables.find(t=>t.name.toLowerCase()===p.name.toLowerCase());
-    if(ex){ex.seats=p.seats;updated++;}
-    else{db.tables.push({id:Date.now()+Math.random(),name:p.name,seats:p.seats});added++;}
-  }
+  // Remove all existing numbered tables (שולחן N) — the PPTX import is the authoritative source
+  const isNumbered=name=>/^שולחן\s+\d+$/i.test(name);
+  db.tables=db.tables.filter(t=>!isNumbered(t.name));
+  for(const p of toImport)
+    db.tables.push({id:Date.now()+Math.random(),name:p.name,seats:p.seats});
   saveData();closeModal('pptxModal');renderSeating();
-  alert(`ייבוא הושלם ✓\n${added} שולחנות חדשים נוספו, ${updated} עודכנו`);
+  alert(`ייבוא הושלם ✓\n${toImport.length} שולחנות עודכנו מהתוכנית`);
 }
 
 // ============================= GROUPS VIEW =============================
