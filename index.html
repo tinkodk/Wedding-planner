@@ -1243,12 +1243,11 @@ function renderFloorMap(){
     const arr=guests.reduce((s,g)=>s+Number(g.arriving||0),0);
     const pct=t.seats>0?Math.min(arr/t.seats,1):0;
     const isSel=_mapSel===t.name;
-    const alpha=pct===0?0.07:0.12+pct*0.78;
-    const fill=`rgba(201,168,76,${alpha.toFixed(2)})`;
-    const stroke=isSel?'#ffffff':pct===0?'rgba(201,168,76,0.28)':'#c9a84c';
-    const sw=isSel?R*0.08:R*0.04;
-    const numClr=pct>0.65?'#1a1208':'#e8c96a';
-    const subClr=pct>0.65?'rgba(0,0,0,0.55)':'rgba(201,168,76,0.55)';
+    const fill=pct===0?'none':`rgba(201,168,76,${(0.15+pct*0.85).toFixed(2)})`;
+    const stroke=isSel?'#333333':'#c9a84c';
+    const sw=isSel?R*0.10:R*0.07;
+    const numClr=pct>0.55?'#1a1208':'#8a6000';
+    const subClr=pct>0.55?'rgba(0,0,0,0.55)':'#b8900a';
     const num=t.name.replace(/שולחן\s*/,'');
     const safeName=t.name.replace(/'/g,"\\'");
     return `<g class="map-tbl" onclick="selectMapTable('${safeName}')" id="mtbl_${num}">
