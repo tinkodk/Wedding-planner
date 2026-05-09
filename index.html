@@ -1327,30 +1327,40 @@ async function _parsePptx(file){
     // Strategy 2: Floor-plan — number shapes + nearest "X אורחים" shapes
     if(!tbls.length){
       const pns='http://schemas.openxmlformats.org/presentationml/2006/main';
+      // Use namespace-aware lookup first, fall back to tag-name-only for compatibility
+      const _getByTag=(el,nsUri,local)=>{
+        const r=el.getElementsByTagNameNS(nsUri,local);
+        return r.length?r:el.getElementsByTagName(local);
+      };
       const shapes=[];
-      for(const sp of doc.getElementsByTagNameNS(pns,'sp')){
-        const xfrmList=sp.getElementsByTagNameNS(ns,'xfrm');
+      const spList=_getByTag(doc,pns,'sp');
+      for(const sp of spList){
+        const xfrmList=_getByTag(sp,ns,'xfrm');
         if(!xfrmList.length)continue;
-        const off=xfrmList[0].getElementsByTagNameNS(ns,'off')[0];
-        if(!off)continue;
+        const offList=_getByTag(xfrmList[0],ns,'off');
+        if(!offList.length)continue;
+        const off=offList[0];
         const x=+off.getAttribute('x'),y=+off.getAttribute('y');
         const parts=[];
-        for(const t of sp.getElementsByTagNameNS(ns,'t'))if(t.textContent.trim())parts.push(t.textContent.trim());
-        const txt=parts.join(' ').replace(/\s+/g,' ').trim();
+        for(const t of _getByTag(sp,ns,'t'))if(t.textContent.trim())parts.push(t.textContent.trim());
+        const txt=parts.join('').replace(/\s+/g,' ').trim();
         if(txt)shapes.push({x,y,txt});
       }
+      console.log('[PPTX] shapes found:',shapes.length,'samples:',shapes.slice(0,6).map(s=>s.txt));
       const tableNums=shapes.filter(s=>/^\d+$/.test(s.txt)&&+s.txt>=1&&+s.txt<=99);
-      const seatShapes=shapes.filter(s=>/^(\d+)\s*אורחים$/.test(s.txt));
+      const seatShapes=shapes.filter(s=>/(\d+)\s*אורחים/.test(s.txt));
+      console.log('[PPTX] tableNums:',tableNums.map(s=>s.txt),'seatShapes:',seatShapes.map(s=>s.txt));
       if(tableNums.length>0&&seatShapes.length>0){
         for(const tbl of tableNums){
           let best=null,bestDist=Infinity;
           for(const sc of seatShapes){const d=Math.sqrt((tbl.x-sc.x)**2+(tbl.y-sc.y)**2);if(d<bestDist){bestDist=d;best=sc;}}
-          const seats=best?+best.txt.match(/\d+/)[0]:8;
+          const seatsMatch=best&&best.txt.match(/(\d+)/);
+          const seats=seatsMatch?+seatsMatch[1]:8;
           results.push({type:'floor-plan',name:`שולחן ${tbl.txt}`,seats,slide:slideNum});
         }
       } else {
         // Fallback: look for "שולחן N" text patterns
-        const allT=doc.getElementsByTagNameNS(ns,'t');
+        const allT=_getByTag(doc,ns,'t');
         const texts=[];
         for(const t of allT)if(t.textContent.trim())texts.push(t.textContent.trim());
         const combined=texts.join(' ');
