@@ -1346,10 +1346,8 @@ async function _parsePptx(file){
         const txt=parts.join('').replace(/\s+/g,' ').trim();
         if(txt)shapes.push({x,y,txt});
       }
-      console.log('[PPTX] shapes found:',shapes.length,'samples:',shapes.slice(0,6).map(s=>s.txt));
       const tableNums=shapes.filter(s=>/^\d+$/.test(s.txt)&&+s.txt>=1&&+s.txt<=99);
-      const seatShapes=shapes.filter(s=>/(\d+)\s*אורחים/.test(s.txt));
-      console.log('[PPTX] tableNums:',tableNums.map(s=>s.txt),'seatShapes:',seatShapes.map(s=>s.txt));
+      const seatShapes=shapes.filter(s=>/^(\d+)\s*אורחים$/.test(s.txt));
       if(tableNums.length>0&&seatShapes.length>0){
         for(const tbl of tableNums){
           let best=null,bestDist=Infinity;
@@ -1404,12 +1402,16 @@ function _showPptxPreview(data){
       <tbody>${unique.map((p,i)=>`
         <tr>
           <td><input type="checkbox" id="pcb${i}" ${p.selected?'checked':''} onchange="window._pptxProposed[${i}].selected=this.checked"/></td>
-          <td><input type="text" value="${p.name.replace(/"/g,'&quot;')}" onchange="window._pptxProposed[${i}].name=this.value"/></td>
-          <td><input type="number" value="${p.seats}" min="1" max="50" onchange="window._pptxProposed[${i}].seats=+this.value"/></td>
+          <td><input type="text" id="pname${i}" onchange="window._pptxProposed[${i}].name=this.value"/></td>
+          <td><input type="number" id="pseats${i}" min="1" max="50" onchange="window._pptxProposed[${i}].seats=+this.value"/></td>
           <td style="color:var(--text-dim);font-size:11px;">${p.source}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
+  unique.forEach((p,i)=>{
+    document.getElementById(`pname${i}`).value=p.name;
+    document.getElementById(`pseats${i}`).value=p.seats;
+  });
   openModal('pptxModal');
 }
 
