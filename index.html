@@ -344,6 +344,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div><h1>סידורי ישיבה</h1><p>שולחנות ושיבוץ אורחים</p></div>
     <div class="header-actions">
       <button class="btn btn-outline" onclick="triggerPptxImport()">📎 ייבוא PPTX</button>
+      <button class="btn btn-outline" id="btn-floor-map" onclick="toggleFloorMap()" style="display:none">🗺️ מפת אולם</button>
       <button class="btn btn-outline" onclick="exportSection('seating')">📊 ייצוא Excel</button>
       <button class="btn btn-outline" onclick="openModal('tableModal')">+ הוסף שולחן</button>
       <button class="btn btn-gold" onclick="openModal('seatAssignModal')">🪑 שבץ אורח</button>
@@ -351,6 +352,9 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
   <div style="margin-top:22px;">
     <div class="cards-row" id="seating-stats"></div>
+    <div id="floor-plan-panel" style="display:none;margin-bottom:16px;">
+      <img id="floor-plan-img" style="width:100%;max-height:520px;object-fit:contain;border-radius:10px;border:1px solid var(--border);background:var(--card);" />
+    </div>
     <div class="seating-tabs">
       <button class="seating-tab active" id="stab-tables" onclick="setSeatingView('tables')">🪑 שולחנות</button>
       <button class="seating-tab" id="stab-groups" onclick="setSeatingView('groups')">👥 לפי קבוצה</button>
@@ -1184,7 +1188,17 @@ function saveTask(){
 }
 
 // ============================= SEATING =============================
+function toggleFloorMap(){
+  const p=document.getElementById('floor-plan-panel');
+  const open=p.style.display==='none';
+  p.style.display=open?'block':'none';
+  document.getElementById('btn-floor-map').textContent=open?'🗺️ הסתר מפה':'🗺️ מפת אולם';
+}
 function renderSeating(){
+  const mapBtn=document.getElementById('btn-floor-map');
+  const mapImg=document.getElementById('floor-plan-img');
+  if(mapBtn&&db.floorPlanImage){mapBtn.style.display='';mapImg.src=db.floorPlanImage;}
+  else if(mapBtn){mapBtn.style.display='none';}
   const total=db.tables.reduce((s,t)=>s+Number(t.seats),0);
   const assigned=db.guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
   const groups=[...new Set(db.guests.map(g=>g.group).filter(Boolean))].length;
@@ -1297,6 +1311,16 @@ function triggerPptxImport(){
 
 async function _parsePptx(file){
   const zip=await JSZip.loadAsync(file);
+  // Extract slide thumbnail for floor plan display
+  window._pptxThumbnail=null;
+  for(const tp of ['docProps/thumbnail.jpeg','docProps/thumbnail.jpg','docProps/thumbnail.png']){
+    if(zip.files[tp]){
+      const b64=await zip.files[tp].async('base64');
+      const mime=tp.endsWith('.png')?'image/png':'image/jpeg';
+      window._pptxThumbnail=`data:${mime};base64,${b64}`;
+      break;
+    }
+  }
   const ns='http://schemas.openxmlformats.org/drawingml/2006/main';
   const slideFiles=Object.keys(zip.files)
     .filter(f=>/^ppt\/slides\/slide\d+\.xml$/.test(f))
@@ -1423,6 +1447,7 @@ function importSelectedPptxTables(){
   db.tables=db.tables.filter(t=>!isNumbered(t.name));
   for(const p of toImport)
     db.tables.push({id:Date.now()+Math.random(),name:p.name,seats:p.seats});
+  if(window._pptxThumbnail)db.floorPlanImage=window._pptxThumbnail;
   saveData();closeModal('pptxModal');renderSeating();
   alert(`ייבוא הושלם ✓\n${toImport.length} שולחנות עודכנו מהתוכנית`);
 }
