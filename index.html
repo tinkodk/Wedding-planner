@@ -1289,13 +1289,10 @@ function renderFloorMap(){
     const fill=pct===0?'none':`rgba(201,168,76,${(0.15+pct*0.85).toFixed(2)})`;
     const stroke=isSel?'#333333':'#c9a84c';
     const sw=isSel?R*0.10:R*0.07;
-    const numClr='#000000';
-    const subClr='#333333';
     const num=_tblNum(t.name)||t.name;
     const safeName=t.name.replace(/'/g,"\\'");
     return `<g class="map-tbl" onclick="selectMapTable('${safeName}')" id="mtbl_${num}" transform="translate(${cx},${cy})">
       <circle cx="0" cy="0" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
-      <text x="0" y="0" dy="${R*0.26}" text-anchor="middle" direction="ltr" fill="#000000" font-size="${R*0.72}" font-family="Arial,sans-serif" font-weight="900">${num}</text>
     </g>`;
   }).join('');
   // Lines / connectors
@@ -1318,6 +1315,31 @@ function renderFloorMap(){
     </div>
   </div>`;
   if(_mapSel)_renderMapSide(_mapSel);
+  // HTML number labels — added after layout so we can measure the SVG's pixel size
+  requestAnimationFrame(()=>{
+    const svgEl=el.querySelector('svg');
+    const wrap=el.querySelector('.map-canvas-wrap');
+    if(!svgEl||!wrap)return;
+    const svgRect=svgEl.getBoundingClientRect();
+    if(!svgRect.width)return;
+    const scaleX=svgRect.width/W;
+    const rPx=Math.round(R*scaleX);
+    const fsPx=Math.max(8,Math.round(rPx*0.75));
+    // remove old labels
+    wrap.querySelectorAll('.map-num-lbl').forEach(n=>n.remove());
+    for(const t of db.tables){
+      const p=pos[t.name];if(!p)continue;
+      const num=_tblNum(t.name);if(!num)continue;
+      const lbl=document.createElement('div');
+      lbl.className='map-num-lbl';
+      lbl.textContent=num;
+      lbl.style.cssText=`position:absolute;left:${p.pctX}%;top:${p.pctY}%;`+
+        `transform:translate(-50%,-50%);width:${rPx*2}px;text-align:center;`+
+        `font-size:${fsPx}px;font-weight:900;color:#000;font-family:Arial,sans-serif;`+
+        `line-height:1;pointer-events:none;`;
+      wrap.appendChild(lbl);
+    }
+  });
 }
 function selectMapTable(name){
   _mapSel=name;
