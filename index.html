@@ -1252,8 +1252,7 @@ function renderFloorMap(){
     const safeName=t.name.replace(/'/g,"\\'");
     return `<g class="map-tbl" onclick="selectMapTable('${safeName}')" id="mtbl_${num}">
       <circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
-      <text x="${cx}" y="${cy-R*0.12}" text-anchor="middle" dominant-baseline="middle" fill="${numClr}" font-size="${R*0.9}" font-family="Heebo,Arial,sans-serif" font-weight="800">${num}</text>
-      <text x="${cx}" y="${cy+R*0.52}" text-anchor="middle" dominant-baseline="middle" fill="${subClr}" font-size="${R*0.36}" font-family="Heebo,Arial,sans-serif">${arr}/${t.seats}</text>
+      <text x="${cx}" y="${cy}" dy="0.35em" text-anchor="middle" fill="#000000" font-size="${R*0.72}" font-family="Arial,sans-serif" font-weight="900">${num}</text>
     </g>`;
   }).join('');
   // Lines / connectors
