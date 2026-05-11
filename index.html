@@ -140,6 +140,19 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .seating-tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:all .15s;}
 .seating-tab:hover{color:var(--text);}
 .seating-tab.active{background:rgba(201,168,76,.15);color:var(--gold);border-color:var(--gold-dim);}
+/* SWAP MODAL */
+.swap-arena{display:grid;grid-template-columns:1fr 44px 1fr;align-items:center;gap:10px;margin:18px 0 10px;}
+.swap-card{background:var(--surface2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;transition:border-color .2s;}
+.swap-card.has-guests{border-color:var(--gold);}
+.swap-card select{width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-size:13px;font-family:inherit;margin-bottom:10px;cursor:pointer;}
+.swap-card select:focus{outline:none;border-color:var(--gold);}
+.swap-card-count{font-size:22px;font-weight:800;color:var(--gold);line-height:1;}
+.swap-card-label{font-size:11px;color:var(--text-dim);margin-bottom:8px;}
+.swap-card-bar-bg{height:4px;background:var(--surface3);border-radius:2px;margin-bottom:8px;overflow:hidden;}
+.swap-card-bar{height:100%;background:var(--gold);border-radius:2px;transition:width .3s;}
+.swap-card-names{font-size:11px;color:var(--text-dim);line-height:1.6;min-height:32px;}
+.swap-arrow{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gold);user-select:none;}
+.swap-same-warn{text-align:center;font-size:12px;color:var(--danger);min-height:16px;margin-bottom:4px;}
 /* MAP VIEW */
 .map-layout{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-top:18px;align-items:start;}
 .map-canvas-wrap{position:relative;border-radius:12px;overflow:hidden;}
@@ -596,14 +609,27 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
 <!-- SWAP TABLES -->
 <div class="modal-overlay" id="swapModal">
-  <div class="modal" style="max-width:420px">
-    <h3>🔄 החלף שולחנות</h3>
-    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">כל האורחים משני השולחנות יוחלפו ביניהם</p>
-    <div class="form-grid">
-      <div class="form-group"><label>שולחן א</label><select id="swap-a"></select></div>
-      <div class="form-group"><label>שולחן ב</label><select id="swap-b"></select></div>
+  <div class="modal" style="max-width:480px">
+    <h3 style="margin-bottom:2px">🔄 החלף שולחנות</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin:0 0 4px">בחר שני שולחנות — כל האורחים יוחלפו ביניהם</p>
+    <div class="swap-arena">
+      <div class="swap-card" id="swap-card-a">
+        <select id="swap-a" onchange="_updateSwapPreview()"></select>
+        <div class="swap-card-count" id="swap-cnt-a">0</div>
+        <div class="swap-card-label">אורחים מגיעים</div>
+        <div class="swap-card-bar-bg"><div class="swap-card-bar" id="swap-bar-a" style="width:0%"></div></div>
+        <div class="swap-card-names" id="swap-names-a"></div>
+      </div>
+      <div class="swap-arrow">⇄</div>
+      <div class="swap-card" id="swap-card-b">
+        <select id="swap-b" onchange="_updateSwapPreview()"></select>
+        <div class="swap-card-count" id="swap-cnt-b">0</div>
+        <div class="swap-card-label">אורחים מגיעים</div>
+        <div class="swap-card-bar-bg"><div class="swap-card-bar" id="swap-bar-b" style="width:0%"></div></div>
+        <div class="swap-card-names" id="swap-names-b"></div>
+      </div>
     </div>
-    <div id="swap-preview" style="font-size:12px;color:var(--text-dim);margin:8px 0 4px;min-height:18px"></div>
+    <div class="swap-same-warn" id="swap-warn"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('swapModal')">ביטול</button>
       <button class="btn btn-gold" onclick="executeSwap()">🔄 החלף</button>
@@ -1390,27 +1416,38 @@ function deleteTable(id){
   }
 }
 function openSwapModal(preselect){
-  const opts=([...db.tables].sort((a,b)=>_tblNum(a.name)-_tblNum(b.name)||a.name.localeCompare(b.name,'he')))
-    .map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+  const sorted=[...db.tables].sort((a,b)=>_tblNum(a.name)-_tblNum(b.name)||a.name.localeCompare(b.name,'he'));
+  const opts=sorted.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
   document.getElementById('swap-a').innerHTML=opts;
   document.getElementById('swap-b').innerHTML=opts;
-  if(preselect){document.getElementById('swap-a').value=preselect;}
-  // pick a different default for B
+  if(preselect)document.getElementById('swap-a').value=preselect;
   const aVal=document.getElementById('swap-a').value;
-  const other=db.tables.find(t=>t.name!==aVal);
+  const other=sorted.find(t=>t.name!==aVal);
   if(other)document.getElementById('swap-b').value=other.name;
   _updateSwapPreview();
-  document.getElementById('swap-a').onchange=_updateSwapPreview;
-  document.getElementById('swap-b').onchange=_updateSwapPreview;
   openModal('swapModal');
 }
 function _updateSwapPreview(){
   const a=document.getElementById('swap-a').value;
   const b=document.getElementById('swap-b').value;
-  const cntA=db.guests.filter(g=>g.table===a).reduce((s,g)=>s+Number(g.arriving||g.count||0),0);
-  const cntB=db.guests.filter(g=>g.table===b).reduce((s,g)=>s+Number(g.arriving||g.count||0),0);
-  document.getElementById('swap-preview').textContent=
-    a===b?'⚠️ יש לבחור שני שולחנות שונים':`${a}: ${cntA} אורחים  ⇄  ${b}: ${cntB} אורחים`;
+  _fillSwapCard(a,'a');
+  _fillSwapCard(b,'b');
+  const same=a===b;
+  document.getElementById('swap-warn').textContent=same?'⚠️ יש לבחור שני שולחנות שונים':'';
+  document.getElementById('swap-card-a').classList.toggle('has-guests',!same&&document.getElementById('swap-cnt-a').textContent!=='0');
+  document.getElementById('swap-card-b').classList.toggle('has-guests',!same&&document.getElementById('swap-cnt-b').textContent!=='0');
+}
+function _fillSwapCard(tblName,side){
+  const tbl=db.tables.find(t=>t.name===tblName);
+  const guests=db.guests.filter(g=>g.table===tblName&&g.rsvp==='מגיעים');
+  const cnt=guests.reduce((s,g)=>s+Number(g.arriving||0),0);
+  const seats=tbl?Number(tbl.seats):0;
+  const pct=seats>0?Math.min(100,Math.round(cnt/seats*100)):0;
+  const names=guests.slice(0,4).map(g=>g.name).join('، ');
+  const more=guests.length>4?` +${guests.length-4} נוספים`:'';
+  document.getElementById(`swap-cnt-${side}`).textContent=cnt;
+  document.getElementById(`swap-bar-${side}`).style.width=pct+'%';
+  document.getElementById(`swap-names-${side}`).textContent=names+(more?more:'')|| (cnt===0?'שולחן ריק':'');
 }
 function executeSwap(){
   const a=document.getElementById('swap-a').value;
