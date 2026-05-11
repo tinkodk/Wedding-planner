@@ -1256,10 +1256,17 @@ function renderFloorMap(){
       <text x="${cx}" y="${cy+R*0.52}" text-anchor="middle" dominant-baseline="middle" fill="${subClr}" font-size="${R*0.36}" font-family="Heebo,Arial,sans-serif">${arr}/${t.seats}</text>
     </g>`;
   }).join('');
+  // Lines / connectors
+  const linesSvg=(db.floorPlanLines||[]).map(l=>{
+    const x1=l.flipH?l.x+l.cx:l.x, y1=l.flipV?l.y+l.cy:l.y;
+    const x2=l.flipH?l.x:l.x+l.cx, y2=l.flipV?l.y:l.y+l.cy;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${l.strokeHex||'#156082'}" stroke-width="22000" stroke-linecap="round"/>`;
+  }).join('');
   el.innerHTML=`<div class="map-layout">
     <div class="map-canvas-wrap">
       <svg class="map-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${W}" height="${H}" fill="#ffffff"/>
+        ${linesSvg}
         ${areasSvg}
         ${circlesSvg}
       </svg>
@@ -1419,11 +1426,19 @@ async function _parsePptx(file){
   const ns='http://schemas.openxmlformats.org/drawingml/2006/main';
   const pns='http://schemas.openxmlformats.org/presentationml/2006/main';
   const _G=(el,nsUri,local)=>{const r=el.getElementsByTagNameNS(nsUri,local);return r.length?r:el.getElementsByTagName(local);};
+  const themeClr={dk1:'#000000',lt1:'#ffffff',dk2:'#17375e',lt2:'#eeece1',accent1:'#4f81bd',accent2:'#c0504d',accent3:'#9bbb59',accent4:'#8064a2',accent5:'#4bacc6',accent6:'#f79646',bg1:'#ffffff',tx1:'#000000',tx2:'#17375e'};
+  try{
+    const thXml=await zip.files['ppt/theme/theme1.xml'].async('text');
+    for(const s of ['dk1','lt1','dk2','lt2','accent1','accent2','accent3','accent4','accent5','accent6','bg1','tx1']){
+      const m=thXml.match(new RegExp('<a:'+s+'[\\s\\S]*?<a:srgbClr val="([0-9a-fA-F]{6})"'));
+      if(m)themeClr[s]='#'+m[1];
+    }
+  }catch(e){}
   const _clr=(el)=>{
     const sf=_G(el,ns,'solidFill')[0];if(!sf)return null;
     const rgb=_G(sf,ns,'srgbClr')[0];if(rgb)return '#'+rgb.getAttribute('val');
     const sc=_G(sf,ns,'schemeClr')[0];if(!sc)return null;
-    return {dk1:'#000000',lt1:'#ffffff',dk2:'#17375e',lt2:'#eeece1',accent1:'#4f81bd',accent2:'#c0504d',accent3:'#9bbb59',accent4:'#8064a2',accent5:'#4bacc6',accent6:'#f79646',bg1:'#ffffff',bg2:'#eeece1',tx1:'#000000',tx2:'#17375e'}[sc.getAttribute('val')]||null;
+    return themeClr[sc.getAttribute('val')]||null;
   };
   // Slide dimensions
   let slideCx=9144000,slideCy=6858000;
@@ -1438,6 +1453,7 @@ async function _parsePptx(file){
     .sort((a,b)=>(+a.match(/\d+/)[0])-(+b.match(/\d+/)[0]));
   const results=[];
   window._pptxSvgShapes=[];
+  window._pptxConnectors=[];
   for(const sf of slideFiles){
     const doc=new DOMParser().parseFromString(await zip.files[sf].async('text'),'application/xml');
     const slideNum=sf.match(/\d+/)[0];
@@ -1477,6 +1493,22 @@ async function _parsePptx(file){
           let fontHex=null,fontSz=0;
           for(const rPr of rPrs){if(!fontHex)fontHex=_clr(rPr);if(!fontSz&&rPr.getAttribute('sz'))fontSz=+rPr.getAttribute('sz');}
           window._pptxSvgShapes.push({x:shX,y:shY,cx:shW,cy:shH,txt,geom,fillHex,fontHex,fontSz});
+        }
+      }
+      // Extract connectors (lines) for floor plan visual
+      if(isFirst){
+        for(const cxn of _G(doc,pns,'cxnSp')){
+          const xfrmL=_G(cxn,ns,'xfrm');if(!xfrmL.length)continue;
+          const xfrm=xfrmL[0],offL=_G(xfrm,ns,'off'),extL=_G(xfrm,ns,'ext');
+          if(!offL.length||!extL.length)continue;
+          const flipH=xfrm.getAttribute('flipH')==='1',flipV=xfrm.getAttribute('flipV')==='1';
+          const x=+offL[0].getAttribute('x'),y=+offL[0].getAttribute('y');
+          const cx=+extL[0].getAttribute('cx'),cy=+extL[0].getAttribute('cy');
+          let strokeHex=themeClr.accent1;
+          const spPr=_G(cxn,ns,'spPr')[0];
+          if(spPr){const ln=_G(spPr,ns,'ln')[0];if(ln){const c=_clr(ln);if(c)strokeHex=c;}}
+          const lnRef=_G(cxn,ns,'lnRef')[0];if(lnRef){const c=_clr(lnRef);if(c)strokeHex=c;}
+          window._pptxConnectors.push({x,y,cx,cy,flipH,flipV,strokeHex});
         }
       }
       const tableNums=shapes.filter(s=>/^\d+$/.test(s.txt)&&+s.txt>=1&&+s.txt<=99);
@@ -1557,6 +1589,7 @@ function importSelectedPptxTables(){
   for(const p of toImport)if(p.pctX!=null)pos[p.name]={pctX:p.pctX,pctY:p.pctY};
   db.tablePositions=pos;
   if(window._pptxSvgShapes)db.floorPlanShapes=window._pptxSvgShapes;
+  if(window._pptxConnectors)db.floorPlanLines=window._pptxConnectors;
   if(window._pptxSlideDims)db.floorPlanDims=window._pptxSlideDims;
   saveData();closeModal('pptxModal');renderSeating();
   alert(`ייבוא הושלם ✓\n${toImport.length} שולחנות עודכנו מהתוכנית`);
