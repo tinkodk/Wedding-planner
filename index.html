@@ -1246,9 +1246,9 @@ function renderFloorMap(){
     const fill=pct===0?'none':`rgba(201,168,76,${(0.15+pct*0.85).toFixed(2)})`;
     const stroke=isSel?'#333333':'#c9a84c';
     const sw=isSel?R*0.10:R*0.07;
-    const numClr=pct>0.55?'#1a1208':'#8a6000';
-    const subClr=pct>0.55?'rgba(0,0,0,0.55)':'#b8900a';
-    const num=t.name.replace(/שולחן\s*/,'');
+    const numClr=pct>0.55?'#1a1208':'#c9a84c';
+    const subClr=pct>0.55?'rgba(0,0,0,0.55)':'#8a6000';
+    const num=_tblNum(t.name)||t.name;
     const safeName=t.name.replace(/'/g,"\\'");
     return `<g class="map-tbl" onclick="selectMapTable('${safeName}')" id="mtbl_${num}">
       <circle cx="${cx}" cy="${cy}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
