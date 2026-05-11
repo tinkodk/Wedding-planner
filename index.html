@@ -1308,8 +1308,9 @@ function _renderMapSide(name){
 function renderSeating(){
   const mapTab=document.getElementById('stab-map');
   if(mapTab)mapTab.style.display=(db.floorPlanShapes&&db.floorPlanShapes.length)?'':'none';
-  const total=db.tables.reduce((s,t)=>s+Number(t.seats),0);
-  const assigned=db.guests.filter(g=>g.table).reduce((s,g)=>s+Number(g.count),0);
+  const sortedTables=[...db.tables].sort((a,b)=>_tblNum(a.name)-_tblNum(b.name)||a.name.localeCompare(b.name,'he'));
+  const total=sortedTables.reduce((s,t)=>s+Number(t.seats),0);
+  const assigned=db.guests.filter(g=>g.table&&g.rsvp==='מגיעים').reduce((s,g)=>s+Number(g.arriving||0),0);
   const groups=[...new Set(db.guests.map(g=>g.group).filter(Boolean))].length;
   document.getElementById('seating-stats').innerHTML=`
     <div class="stat-card"><div class="label">שולחנות</div><div class="value">${db.tables.length}</div></div>
@@ -1319,7 +1320,7 @@ function renderSeating(){
     <div class="stat-card"><div class="label">קבוצות</div><div class="value">${groups}</div></div>`;
   const g=document.getElementById('seating-grid');
   if(!db.tables.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;}
-  else{g.innerHTML=db.tables.map(t=>{
+  else{g.innerHTML=sortedTables.map(t=>{
     const seated=db.guests.filter(g=>g.table===t.name&&g.rsvp==='מגיעים');
     const cnt=seated.reduce((s,g)=>s+Number(g.arriving||0),0);
     return `<div class="table-block">
@@ -1388,6 +1389,7 @@ function openSeatAssignModal(){
 
 // ============================= GROUP COLORS =============================
 const _GRP_COLORS=['#c9a84c','#5ce08a','#5ca8e0','#e05c8a','#a05ce0','#e0a05c','#5cd8e0','#e07a5c','#7ae05c','#c05ce0'];
+function _tblNum(n){const m=n.match(/(\d+)\s*$/);return m?+m[1]:0;}
 function groupColor(name){
   let h=0;for(let i=0;i<name.length;i++)h=((h<<5)-h)+name.charCodeAt(i);
   return _GRP_COLORS[Math.abs(h)%_GRP_COLORS.length];
@@ -1668,7 +1670,8 @@ function renderSmartView(){
 
   const grid=document.getElementById('smart-tables-grid');
   if(!db.tables.length){grid.innerHTML=`<div class="empty-state"><div class="icon">🪑</div><p>הוסף שולחן להתחלה</p></div>`;return;}
-  grid.innerHTML=db.tables.map(t=>{
+  const sortedTbls=[...db.tables].sort((a,b)=>_tblNum(a.name)-_tblNum(b.name)||a.name.localeCompare(b.name,'he'));
+  grid.innerHTML=sortedTbls.map(t=>{
     const seated=db.guests.filter(g=>g.table===t.name&&g.rsvp==='מגיעים');
     const cnt=seated.reduce((s,g)=>s+Number(g.arriving||0),0);
     const pct=t.seats>0?cnt/t.seats:0;
