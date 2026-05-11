@@ -594,6 +594,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- SWAP TABLES -->
+<div class="modal-overlay" id="swapModal">
+  <div class="modal" style="max-width:420px">
+    <h3>🔄 החלף שולחנות</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">כל האורחים משני השולחנות יוחלפו ביניהם</p>
+    <div class="form-grid">
+      <div class="form-group"><label>שולחן א</label><select id="swap-a"></select></div>
+      <div class="form-group"><label>שולחן ב</label><select id="swap-b"></select></div>
+    </div>
+    <div id="swap-preview" style="font-size:12px;color:var(--text-dim);margin:8px 0 4px;min-height:18px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('swapModal')">ביטול</button>
+      <button class="btn btn-gold" onclick="executeSwap()">🔄 החלף</button>
+    </div>
+  </div>
+</div>
+
 <!-- SEAT ASSIGN -->
 <div class="modal-overlay" id="seatAssignModal">
   <div class="modal">
@@ -1325,6 +1342,7 @@ function renderSeating(){
     return `<div class="table-block">
       <div class="table-name">🪑 ${t.name}
         <div style="float:left;display:flex;gap:4px;">
+          <button class="btn btn-sm btn-outline" onclick="openSwapModal('${t.name.replace(/'/g,"\\'")}')" style="padding:2px 6px;font-size:11px;" title="החלף עם שולחן אחר">🔄</button>
           <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
           <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
         </div>
@@ -1370,6 +1388,39 @@ function deleteTable(id){
     db.tables=db.tables.filter(x=>x.id!==id);
     saveData();renderSeating();renderGuests();
   }
+}
+function openSwapModal(preselect){
+  const opts=([...db.tables].sort((a,b)=>_tblNum(a.name)-_tblNum(b.name)||a.name.localeCompare(b.name,'he')))
+    .map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+  document.getElementById('swap-a').innerHTML=opts;
+  document.getElementById('swap-b').innerHTML=opts;
+  if(preselect){document.getElementById('swap-a').value=preselect;}
+  // pick a different default for B
+  const aVal=document.getElementById('swap-a').value;
+  const other=db.tables.find(t=>t.name!==aVal);
+  if(other)document.getElementById('swap-b').value=other.name;
+  _updateSwapPreview();
+  document.getElementById('swap-a').onchange=_updateSwapPreview;
+  document.getElementById('swap-b').onchange=_updateSwapPreview;
+  openModal('swapModal');
+}
+function _updateSwapPreview(){
+  const a=document.getElementById('swap-a').value;
+  const b=document.getElementById('swap-b').value;
+  const cntA=db.guests.filter(g=>g.table===a).reduce((s,g)=>s+Number(g.arriving||g.count||0),0);
+  const cntB=db.guests.filter(g=>g.table===b).reduce((s,g)=>s+Number(g.arriving||g.count||0),0);
+  document.getElementById('swap-preview').textContent=
+    a===b?'⚠️ יש לבחור שני שולחנות שונים':`${a}: ${cntA} אורחים  ⇄  ${b}: ${cntB} אורחים`;
+}
+function executeSwap(){
+  const a=document.getElementById('swap-a').value;
+  const b=document.getElementById('swap-b').value;
+  if(!a||!b||a===b){alert('יש לבחור שני שולחנות שונים');return;}
+  const TEMP='__swap_tmp__';
+  db.guests.filter(g=>g.table===a).forEach(g=>g.table=TEMP);
+  db.guests.filter(g=>g.table===b).forEach(g=>g.table=a);
+  db.guests.filter(g=>g.table===TEMP).forEach(g=>g.table=b);
+  saveData();closeModal('swapModal');renderSeating();renderGuests();
 }
 function assignSeat(){
   const gid=+document.getElementById('sa-guest').value;
@@ -1678,6 +1729,7 @@ function renderSmartView(){
     return `<div class="table-block">
       <div class="table-name">🪑 ${t.name}
         <div style="float:left;display:flex;gap:4px;">
+          <button class="btn btn-sm btn-outline" onclick="openSwapModal('${t.name.replace(/'/g,"\\'")}')" style="padding:2px 6px;font-size:11px;" title="החלף עם שולחן אחר">🔄</button>
           <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
           <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
         </div>
