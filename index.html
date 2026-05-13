@@ -1427,7 +1427,7 @@ function renderSeating(){
     const cnt=seated.reduce((s,g)=>s+Number(g.arriving||0),0);
     return `<div class="table-block">
       <div class="table-name">
-        <span>🪑 ${t.name}</span>
+        <span>🪑 ${t.name.replace(/^שולחן\s+/,'')}</span>
         <div style="display:flex;gap:4px;flex-shrink:0;">
           <button class="btn btn-sm btn-outline" onclick="openSwapModal('${t.name.replace(/'/g,"\\'")}')" style="padding:2px 6px;font-size:11px;" title="החלף עם שולחן אחר">🔄</button>
           <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
@@ -1826,7 +1826,7 @@ function renderSmartView(){
     const barColor=pct>=1?'var(--danger)':pct>=0.8?'var(--gold)':'var(--success)';
     return `<div class="table-block">
       <div class="table-name">
-        <span>🪑 ${t.name}</span>
+        <span>🪑 ${t.name.replace(/^שולחן\s+/,'')}</span>
         <div style="display:flex;gap:4px;flex-shrink:0;">
           <button class="btn btn-sm btn-outline" onclick="openSwapModal('${t.name.replace(/'/g,"\\'")}')" style="padding:2px 6px;font-size:11px;" title="החלף עם שולחן אחר">🔄</button>
           <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
