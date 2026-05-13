@@ -332,6 +332,17 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div><h1>אורחים</h1><p>רשימת הזמנות ואישורי הגעה</p></div>
     <div class="header-actions">
       <input class="search-bar" type="text" placeholder="חיפוש אורח..." id="guest-search" oninput="renderGuests()"/>
+      <select id="guest-filter-group" onchange="renderGuests()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;"><option value="">כל הקבוצות</option></select>
+      <select id="guest-filter-status" onchange="renderGuests()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;">
+        <option value="">כל הסטטוסים</option>
+        <option>מגיעים</option>
+        <option>לא מגיעים</option>
+        <option>מתלבטים</option>
+        <option>אין מענה</option>
+        <option>ממתין</option>
+        <option>ביטל</option>
+      </select>
+      <select id="guest-filter-table" onchange="renderGuests()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;"><option value="">כל השולחנות</option></select>
       <button class="btn btn-info" onclick="triggerImport('guests')">📥 ייבוא Excel</button>
       <button class="btn btn-outline" onclick="exportSection('guests')">📊 ייצוא Excel</button>
       <button class="btn btn-gold" onclick="openGuestModal()">+ הוסף אורח</button>
@@ -1131,7 +1142,34 @@ function togglePartialPayment(){
 // ============================= GUESTS =============================
 function renderGuests(){
   const q=(document.getElementById('guest-search')||{}).value||'';
-  const list=db.guests.filter(g=>!q||g.name.includes(q)||g.group.includes(q)||(g.source||'').includes(q)||(g.phone||'').includes(q));
+
+  // Populate group filter dynamically (preserve selection)
+  const groupSel=document.getElementById('guest-filter-group');
+  if(groupSel){
+    const cur=groupSel.value;
+    const groups=[...new Set(db.guests.map(g=>g.group).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+    groupSel.innerHTML=`<option value="">כל הקבוצות</option>`+groups.map(g=>`<option value="${g}">${g}</option>`).join('');
+    groupSel.value=cur;
+  }
+  // Populate table filter dynamically (preserve selection)
+  const tableSel=document.getElementById('guest-filter-table');
+  if(tableSel){
+    const cur=tableSel.value;
+    tableSel.innerHTML=`<option value="">כל השולחנות</option>`+db.tables.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+    tableSel.value=cur;
+  }
+
+  const fGroup=groupSel?groupSel.value:'';
+  const fStatus=(document.getElementById('guest-filter-status')||{}).value||'';
+  const fTable=tableSel?tableSel.value:'';
+
+  const list=db.guests.filter(g=>{
+    if(q && !g.name.includes(q) && !g.group.includes(q) && !(g.source||'').includes(q) && !(g.phone||'').includes(q)) return false;
+    if(fGroup && g.group!==fGroup) return false;
+    if(fStatus && g.rsvp!==fStatus) return false;
+    if(fTable && g.table!==fTable) return false;
+    return true;
+  });
   const total=db.guests.reduce((s,g)=>s+Number(g.count),0);
   const coming=db.guests.reduce((s,g)=>s+Number(g.arriving||0),0);
   const notComing=db.guests.filter(g=>g.rsvp==='לא מגיעים').reduce((s,g)=>s+Number(g.count),0);
