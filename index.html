@@ -131,7 +131,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .seating-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:13px;margin-top:18px;}
 .table-block{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:13px;transition:border-color .2s;}
 .table-block:hover{border-color:var(--gold);}
-.table-block .table-name{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;}
+.table-block .table-name{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
 .table-block .seats-list{display:flex;flex-direction:column;gap:3px;}
 .seat-chip{font-size:11px;padding:4px 8px;background:rgba(255,255,255,.06);border-radius:6px;color:var(--text-dim);display:block;}
 .seat-chip.filled{background:rgba(201,168,76,.2);color:var(--gold);}
@@ -1426,8 +1426,9 @@ function renderSeating(){
     const seated=db.guests.filter(g=>g.table===t.name&&g.rsvp==='מגיעים');
     const cnt=seated.reduce((s,g)=>s+Number(g.arriving||0),0);
     return `<div class="table-block">
-      <div class="table-name">🪑 ${t.name}
-        <div style="float:left;display:flex;gap:4px;">
+      <div class="table-name">
+        <span>🪑 ${t.name}</span>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
           <button class="btn btn-sm btn-outline" onclick="openSwapModal('${t.name.replace(/'/g,"\\'")}')" style="padding:2px 6px;font-size:11px;" title="החלף עם שולחן אחר">🔄</button>
           <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
           <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
@@ -1824,8 +1825,9 @@ function renderSmartView(){
     const pct=t.seats>0?cnt/t.seats:0;
     const barColor=pct>=1?'var(--danger)':pct>=0.8?'var(--gold)':'var(--success)';
     return `<div class="table-block">
-      <div class="table-name">🪑 ${t.name}
-        <div style="float:left;display:flex;gap:4px;">
+      <div class="table-name">
+        <span>🪑 ${t.name}</span>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
           <button class="btn btn-sm btn-outline" onclick="openSwapModal('${t.name.replace(/'/g,"\\'")}')" style="padding:2px 6px;font-size:11px;" title="החלף עם שולחן אחר">🔄</button>
           <button class="btn btn-sm btn-outline" onclick="editTable(${t.id})" style="padding:2px 6px;font-size:11px;">✏️</button>
           <button class="btn btn-sm btn-danger" onclick="deleteTable(${t.id})" style="padding:2px 6px;font-size:11px;">🗑️</button>
