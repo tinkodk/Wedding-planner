@@ -232,7 +232,9 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
 /* PRINT PREVIEW */
 .print-preview-modal .modal{max-width:800px;background:var(--surface);}
-.print-page{background:#fff;color:#1a1a2e;border-radius:8px;padding:36px 40px;font-family:'Heebo',sans-serif;direction:rtl;}
+.print-page{background:#fff;color:#1a1a2e;border-radius:8px;padding:36px 40px;font-family:'Heebo',sans-serif;direction:rtl;break-after:page;}
+.print-page:last-child{break-after:auto;}
+.print-page+.print-page{margin-top:28px;}
 .print-header{text-align:center;padding-bottom:22px;margin-bottom:28px;border-bottom:2.5px solid #c9a84c;}
 .print-rings{font-size:34px;margin-bottom:6px;}
 .print-couple{font-size:26px;font-weight:800;color:#1a1a2e;letter-spacing:.02em;}
@@ -240,13 +242,13 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .print-meta{font-size:12px;color:#b8952a;font-weight:600;margin-top:8px;letter-spacing:.03em;}
 .print-cols{display:flex;gap:28px;}
 .print-col{flex:1;min-width:0;}
-.pr-row{display:flex;align-items:center;padding:5px 8px;border-radius:4px;font-size:12.5px;gap:6px;min-height:28px;}
+.pr-row{display:flex;align-items:center;padding:7px 10px;border-radius:5px;gap:8px;min-height:36px;}
 .pr-row:nth-child(even){background:#f5f5f8;}
-.pr-num{font-size:10px;color:#ccc;min-width:22px;text-align:left;flex-shrink:0;}
-.pr-name{flex:1;font-weight:600;color:#1a1a2e;font-size:13px;}
+.pr-num{font-size:11px;color:#ccc;min-width:24px;text-align:left;flex-shrink:0;}
+.pr-name{flex:1;font-weight:600;color:#1a1a2e;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pr-group{display:none;}
-.pr-table{font-size:14px;font-weight:800;color:#1e40af;background:#dbeafe;padding:2px 10px;border-radius:10px;flex-shrink:0;white-space:nowrap;min-width:34px;text-align:center;}
-.pr-no-table{font-size:11px;color:#ddd;flex-shrink:0;}
+.pr-table{font-size:14px;font-weight:800;color:#1e40af;background:#dbeafe;padding:3px 11px;border-radius:10px;flex-shrink:0;white-space:nowrap;min-width:34px;text-align:center;}
+.pr-no-table{font-size:12px;color:#ddd;flex-shrink:0;}
 .print-footer{text-align:center;padding-top:16px;margin-top:22px;border-top:1px solid #eee;font-size:11px;color:#bbb;}
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
@@ -2461,18 +2463,13 @@ function openPrintPreview(){
   openModal('printPreviewModal');
 }
 function buildPrintHTML(guests){
-  // Exclude "טינקו - עבודה" group — replaced by special entries below
   const filtered=guests.filter(g=>(g.group||'')!=='טינקו - עבודה');
-  // Three special rows for Tinko work group at the end of the list
   const special=[
     {name:'דרגונטייל',table:'9'},
     {name:'דרגונטייל',table:'10'},
     {name:'דרגונטייל',table:'13'},
   ];
   const all=[...filtered,...special];
-  const half=Math.ceil(all.length/2);
-  const col1=all.slice(0,half);
-  const col2=all.slice(half);
   const renderRow=(g,i)=>{
     const tblVal=g.table?(g.table+'').replace(/^שולחן\s+/,''):null;
     const tbl=tblVal
@@ -2484,21 +2481,28 @@ function buildPrintHTML(guests){
       ${tbl}
     </div>`;
   };
+  const buildPage=(entries,startIdx)=>{
+    const half=Math.ceil(entries.length/2);
+    const c1=entries.slice(0,half);
+    const c2=entries.slice(half);
+    return `<div class="print-page">
+      <div class="print-header">
+        <div class="print-rings">💍</div>
+        <div class="print-couple">טינקו &amp; אנדריאה</div>
+        <div class="print-subtitle">רשימת אורחים לפי שם</div>
+        <div class="print-meta">20 במאי 2026 &nbsp;·&nbsp; ${all.length} שורות</div>
+      </div>
+      <div class="print-cols">
+        <div class="print-col">${c1.map((g,i)=>renderRow(g,startIdx+i+1)).join('')}</div>
+        <div class="print-col">${c2.map((g,i)=>renderRow(g,startIdx+c1.length+i+1)).join('')}</div>
+      </div>
+      <div class="print-footer">הופק ב־${gen} &nbsp;·&nbsp; ניהול חתונה טינקו &amp; אנדריאה</div>
+    </div>`;
+  };
   const today=new Date();
   const gen=`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
-  return `<div class="print-page">
-    <div class="print-header">
-      <div class="print-rings">💍</div>
-      <div class="print-couple">טינקו &amp; אנדריאה</div>
-      <div class="print-subtitle">רשימת אורחים לפי שם</div>
-      <div class="print-meta">20 במאי 2026 &nbsp;·&nbsp; ${all.length} שורות</div>
-    </div>
-    <div class="print-cols">
-      <div class="print-col">${col1.map((g,i)=>renderRow(g,i+1)).join('')}</div>
-      <div class="print-col">${col2.map((g,i)=>renderRow(g,col1.length+i+1)).join('')}</div>
-    </div>
-    <div class="print-footer">הופק ב־${gen} &nbsp;·&nbsp; ניהול חתונה טינקו &amp; אנדריאה</div>
-  </div>`;
+  const pageSize=Math.ceil(all.length/2);
+  return buildPage(all.slice(0,pageSize),0)+buildPage(all.slice(pageSize),pageSize);
 }
 function doPrint(){window.print();}
 
