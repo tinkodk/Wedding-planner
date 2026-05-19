@@ -2495,7 +2495,7 @@ function buildPrintHTML(guests){
     return `<div class="print-page">
       <div class="print-header">
         <div class="print-rings">💍</div>
-        <div class="print-couple">טינקו &amp; אנדריאה</div>
+        <div class="print-couple">אנדראה &amp; טינקו</div>
         <div class="print-subtitle">רשימת אורחים לפי שם</div>
         <div class="print-meta">20 במאי 2026 &nbsp;·&nbsp; ${all.length} שורות</div>
       </div>
@@ -2503,7 +2503,7 @@ function buildPrintHTML(guests){
         <div class="print-col">${c1.map((g,i)=>renderRow(g,startIdx+i+1)).join('')}</div>
         <div class="print-col">${c2.map((g,i)=>renderRow(g,startIdx+c1.length+i+1)).join('')}</div>
       </div>
-      <div class="print-footer">הופק ב־${gen} &nbsp;·&nbsp; ניהול חתונה טינקו &amp; אנדריאה</div>
+      <div class="print-footer">הופק ב־${gen} &nbsp;·&nbsp; ניהול חתונה אנדראה &amp; טינקו</div>
     </div>`;
   };
   const today=new Date();
