@@ -229,6 +229,31 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .sync-hint{background:var(--surface3);border-radius:8px;padding:11px 13px;font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:14px;}
 .sync-hint a{color:var(--gold);text-decoration:none;}
 @media(max-width:700px){:root{--sidebar:0px;}#sidebar{display:none;}#main{margin-right:0;}.section{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-grid .full{grid-column:span 1;}.budget-totals{grid-template-columns:1fr;}.overview-grid{grid-template-columns:1fr;}}
+
+/* PRINT PREVIEW */
+.print-preview-modal .modal{max-width:800px;background:var(--surface);}
+.print-page{background:#fff;color:#1a1a2e;border-radius:8px;padding:36px 40px;font-family:'Heebo',sans-serif;direction:rtl;}
+.print-header{text-align:center;padding-bottom:22px;margin-bottom:28px;border-bottom:2.5px solid #c9a84c;}
+.print-rings{font-size:34px;margin-bottom:6px;}
+.print-couple{font-size:26px;font-weight:800;color:#1a1a2e;letter-spacing:.02em;}
+.print-subtitle{font-size:13px;color:#999;margin-top:5px;}
+.print-meta{font-size:12px;color:#b8952a;font-weight:600;margin-top:8px;letter-spacing:.03em;}
+.print-cols{display:flex;gap:28px;}
+.print-col{flex:1;min-width:0;}
+.pr-row{display:flex;align-items:center;padding:5px 8px;border-radius:4px;font-size:12.5px;gap:6px;min-height:28px;}
+.pr-row:nth-child(even){background:#f5f5f8;}
+.pr-num{font-size:10px;color:#ccc;min-width:22px;text-align:left;flex-shrink:0;}
+.pr-name{flex:1;font-weight:600;color:#1a1a2e;font-size:13px;}
+.pr-group{font-size:10.5px;color:#aaa;flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pr-table{font-size:11px;font-weight:700;color:#b8952a;background:#fdf3dc;padding:2px 8px;border-radius:10px;flex-shrink:0;white-space:nowrap;}
+.pr-no-table{font-size:11px;color:#ddd;flex-shrink:0;}
+.print-footer{text-align:center;padding-top:16px;margin-top:22px;border-top:1px solid #eee;font-size:11px;color:#bbb;}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  #sidebar,#main,.modal-overlay{display:none!important;}
+  body{background:#fff!important;overflow:visible!important;margin:0;padding:0;}
+  #print-target{display:block!important;}
+}
 </style>
 </head>
 <body>
@@ -343,6 +368,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <option>ביטל</option>
       </select>
       <select id="guest-filter-table" onchange="renderGuests()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;"><option value="">כל השולחנות</option></select>
+      <button class="btn btn-outline" onclick="openPrintPreview()">🖨️ הדפסה</button>
       <button class="btn btn-info" onclick="triggerImport('guests')">📥 ייבוא Excel</button>
       <button class="btn btn-outline" onclick="exportSection('guests')">📊 ייצוא Excel</button>
       <button class="btn btn-gold" onclick="openGuestModal()">+ הוסף אורח</button>
@@ -2426,10 +2452,69 @@ function saveSyncConfig(){
   saveToGist();
 }
 
+// ============================= PRINT =============================
+function openPrintPreview(){
+  const sorted=[...db.guests].sort((a,b)=>a.name.localeCompare(b.name,'he'));
+  const html=buildPrintHTML(sorted);
+  document.getElementById('print-preview-content').innerHTML=html;
+  document.getElementById('print-target').innerHTML=html;
+  openModal('printPreviewModal');
+}
+function buildPrintHTML(guests){
+  const half=Math.ceil(guests.length/2);
+  const col1=guests.slice(0,half);
+  const col2=guests.slice(half);
+  const renderRow=(g,i)=>{
+    const tbl=g.table
+      ?`<span class="pr-table">${g.table}</span>`
+      :`<span class="pr-no-table">–</span>`;
+    return `<div class="pr-row">
+      <span class="pr-num">${i}</span>
+      <span class="pr-name">${g.name}</span>
+      <span class="pr-group">${g.group||''}</span>
+      ${tbl}
+    </div>`;
+  };
+  const today=new Date();
+  const gen=`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+  return `<div class="print-page">
+    <div class="print-header">
+      <div class="print-rings">💍</div>
+      <div class="print-couple">טינקו &amp; אנדריאה</div>
+      <div class="print-subtitle">רשימת אורחים לפי שם</div>
+      <div class="print-meta">20 במאי 2026 &nbsp;·&nbsp; ${guests.length} אורחים</div>
+    </div>
+    <div class="print-cols">
+      <div class="print-col">${col1.map((g,i)=>renderRow(g,i+1)).join('')}</div>
+      <div class="print-col">${col2.map((g,i)=>renderRow(g,col1.length+i+1)).join('')}</div>
+    </div>
+    <div class="print-footer">הופק ב־${gen} &nbsp;·&nbsp; ניהול חתונה טינקו &amp; אנדריאה</div>
+  </div>`;
+}
+function doPrint(){window.print();}
+
 // ============================= INIT =============================
 updateCountdown();
 renderAll();
 if(syncConfig.lastSync) updateSyncStatus('synced');
 </script>
+
+<!-- PRINT PREVIEW MODAL -->
+<div class="modal-overlay print-preview-modal" id="printPreviewModal">
+  <div class="modal" style="padding:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;color:var(--gold);">🖨️ תצוגה מקדימה להדפסה</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-gold" onclick="doPrint()">🖨️ הדפס / שמור PDF</button>
+        <button class="btn btn-outline" onclick="closeModal('printPreviewModal')">✕ סגור</button>
+      </div>
+    </div>
+    <div style="max-height:72vh;overflow-y:auto;border-radius:8px;box-shadow:0 2px 18px rgba(0,0,0,.35);" id="print-preview-content"></div>
+  </div>
+</div>
+
+<!-- HIDDEN PRINT TARGET -->
+<div id="print-target" style="display:none;"></div>
+
 </body>
 </html>
