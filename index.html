@@ -244,8 +244,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .pr-row:nth-child(even){background:#f5f5f8;}
 .pr-num{font-size:10px;color:#ccc;min-width:22px;text-align:left;flex-shrink:0;}
 .pr-name{flex:1;font-weight:600;color:#1a1a2e;font-size:13px;}
-.pr-group{font-size:10.5px;color:#aaa;flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pr-table{font-size:11px;font-weight:700;color:#b8952a;background:#fdf3dc;padding:2px 8px;border-radius:10px;flex-shrink:0;white-space:nowrap;}
+.pr-group{display:none;}
+.pr-table{font-size:14px;font-weight:800;color:#1e40af;background:#dbeafe;padding:2px 10px;border-radius:10px;flex-shrink:0;white-space:nowrap;min-width:34px;text-align:center;}
 .pr-no-table{font-size:11px;color:#ddd;flex-shrink:0;}
 .print-footer{text-align:center;padding-top:16px;margin-top:22px;border-top:1px solid #eee;font-size:11px;color:#bbb;}
 @media print{
@@ -2461,17 +2461,26 @@ function openPrintPreview(){
   openModal('printPreviewModal');
 }
 function buildPrintHTML(guests){
-  const half=Math.ceil(guests.length/2);
-  const col1=guests.slice(0,half);
-  const col2=guests.slice(half);
+  // Exclude "טינקו - עבודה" group — replaced by special entries below
+  const filtered=guests.filter(g=>(g.group||'')!=='טינקו - עבודה');
+  // Three special rows for Tinko work group at the end of the list
+  const special=[
+    {name:'דרגונטייל',table:'9'},
+    {name:'דרגונטייל',table:'10'},
+    {name:'דרגונטייל',table:'13'},
+  ];
+  const all=[...filtered,...special];
+  const half=Math.ceil(all.length/2);
+  const col1=all.slice(0,half);
+  const col2=all.slice(half);
   const renderRow=(g,i)=>{
-    const tbl=g.table
-      ?`<span class="pr-table">${g.table}</span>`
+    const tblVal=g.table?(g.table+'').replace(/^שולחן\s+/,''):null;
+    const tbl=tblVal
+      ?`<span class="pr-table">${tblVal}</span>`
       :`<span class="pr-no-table">–</span>`;
     return `<div class="pr-row">
       <span class="pr-num">${i}</span>
       <span class="pr-name">${g.name}</span>
-      <span class="pr-group">${g.group||''}</span>
       ${tbl}
     </div>`;
   };
@@ -2482,7 +2491,7 @@ function buildPrintHTML(guests){
       <div class="print-rings">💍</div>
       <div class="print-couple">טינקו &amp; אנדריאה</div>
       <div class="print-subtitle">רשימת אורחים לפי שם</div>
-      <div class="print-meta">20 במאי 2026 &nbsp;·&nbsp; ${guests.length} אורחים</div>
+      <div class="print-meta">20 במאי 2026 &nbsp;·&nbsp; ${all.length} שורות</div>
     </div>
     <div class="print-cols">
       <div class="print-col">${col1.map((g,i)=>renderRow(g,i+1)).join('')}</div>
