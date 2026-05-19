@@ -240,8 +240,9 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .print-couple{font-size:26px;font-weight:800;color:#1a1a2e;letter-spacing:.02em;}
 .print-subtitle{font-size:13px;color:#999;margin-top:5px;}
 .print-meta{font-size:12px;color:#b8952a;font-weight:600;margin-top:8px;letter-spacing:.03em;}
-.print-cols{display:flex;gap:28px;}
-.print-col{flex:1;min-width:0;}
+.print-cols{display:flex;gap:0;}
+.print-col{flex:0 0 50%;width:50%;min-width:0;box-sizing:border-box;padding:0 12px;}
+.print-col:first-child{border-left:1px solid #e8e8ec;}
 .pr-row{display:flex;align-items:center;padding:7px 10px;border-radius:5px;gap:8px;min-height:36px;}
 .pr-row:nth-child(even){background:#f5f5f8;}
 .pr-num{font-size:11px;color:#ccc;min-width:24px;text-align:left;flex-shrink:0;}
