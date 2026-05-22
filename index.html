@@ -377,6 +377,11 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <option>ביטל</option>
       </select>
       <select id="guest-filter-table" onchange="renderGuests()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;"><option value="">כל השולחנות</option></select>
+      <select id="guest-filter-gift" onchange="renderGuests()" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;">
+        <option value="">כל המתנות</option>
+        <option value="yes">🎁 הביאו מתנה</option>
+        <option value="no">— ללא מתנה</option>
+      </select>
       <button class="btn btn-outline" onclick="openPrintPreview()">🖨️ הדפסה</button>
       <button class="btn btn-info" onclick="triggerImport('guests')">📥 ייבוא Excel</button>
       <button class="btn btn-outline" onclick="exportSection('guests')">📊 ייצוא Excel</button>
@@ -1198,12 +1203,15 @@ function renderGuests(){
   const fGroup=groupSel?groupSel.value:'';
   const fStatus=(document.getElementById('guest-filter-status')||{}).value||'';
   const fTable=tableSel?tableSel.value:'';
+  const fGift=(document.getElementById('guest-filter-gift')||{}).value||'';
 
   const list=db.guests.filter(g=>{
     if(q && !g.name.includes(q) && !g.group.includes(q) && !(g.source||'').includes(q) && !(g.phone||'').includes(q)) return false;
     if(fGroup && g.group!==fGroup) return false;
     if(fStatus && g.rsvp!==fStatus) return false;
     if(fTable && g.table!==fTable) return false;
+    if(fGift==='yes' && !Number(g.gift||0)) return false;
+    if(fGift==='no' && Number(g.gift||0)>0) return false;
     return true;
   });
   const total=db.guests.reduce((s,g)=>s+Number(g.count),0);
