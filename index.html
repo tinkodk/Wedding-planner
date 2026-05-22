@@ -386,7 +386,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div style="margin-top:22px;">
     <div class="cards-row" id="guest-stats"></div>
     <div class="table-card">
-      <table><thead><tr><th>קבוצה</th><th>שם אורח</th><th>טלפון</th><th>מוזמנים</th><th>מגיעים</th><th>סטטוס</th><th>הערות</th><th>שולחן</th><th>פעולות</th></tr></thead>
+      <table><thead><tr><th>קבוצה</th><th>שם אורח</th><th>טלפון</th><th>מוזמנים</th><th>מגיעים</th><th>סטטוס</th><th>הערות</th><th>שולחן</th><th>מתנה</th><th>פעולות</th></tr></thead>
       <tbody id="guests-body"></tbody></table>
     </div>
   </div>
@@ -608,6 +608,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <div class="form-group"><label>מוזמנים</label><input type="number" id="g-count" value="1" min="1"/></div>
       <div class="form-group"><label>מגיעים</label><input type="number" id="g-arriving" value="0" min="0"/></div>
       <div class="form-group"><label>שולחן</label><input type="text" id="g-table" placeholder="לדוגמה: שולחן 5" list="g-table-list"/><datalist id="g-table-list"></datalist></div>
+      <div class="form-group"><label>מתנה (₪)</label><input type="number" id="g-gift" value="0" min="0"/></div>
       <div class="form-group full"><label>הערות</label><input type="text" id="g-notes" placeholder="הערות נוספות..."/></div>
     </div>
     <div class="modal-actions">
@@ -1210,12 +1211,14 @@ function renderGuests(){
   const notComing=db.guests.filter(g=>g.rsvp==='לא מגיעים').reduce((s,g)=>s+Number(g.count),0);
   const noAnswer=db.guests.filter(g=>g.rsvp==='אין מענה'||g.rsvp==='ממתין').reduce((s,g)=>s+Number(g.count),0);
   const tentative=db.guests.filter(g=>g.rsvp==='מתלבטים').reduce((s,g)=>s+Number(g.count),0);
+  const totalGifts=db.guests.reduce((s,g)=>s+Number(g.gift||0),0);
   document.getElementById('guest-stats').innerHTML=`
     <div class="stat-card"><div class="label">סה"כ מוזמנים</div><div class="value">${total}</div></div>
     <div class="stat-card"><div class="label">מגיעים</div><div class="value" style="color:var(--success)">${coming}</div></div>
     <div class="stat-card"><div class="label">מתלבטים</div><div class="value" style="color:var(--gold)">${tentative}</div></div>
     <div class="stat-card"><div class="label">אין מענה</div><div class="value" style="color:var(--text-dim)">${noAnswer}</div></div>
-    <div class="stat-card"><div class="label">לא מגיעים</div><div class="value" style="color:var(--danger)">${notComing}</div></div>`;
+    <div class="stat-card"><div class="label">לא מגיעים</div><div class="value" style="color:var(--danger)">${notComing}</div></div>
+    <div class="stat-card" style="margin-right:auto"><div class="label">🎁 סה"כ מתנות</div><div class="value" style="color:var(--success)">₪${totalGifts.toLocaleString()}</div></div>`;
   document.getElementById('guests-body').innerHTML=list.length?list.map(g=>`
     <tr>
       <td>${g.group}</td>
@@ -1226,9 +1229,10 @@ function renderGuests(){
       <td>${badge(g.rsvp)}</td>
       <td style="color:var(--text-dim)">${g.notes||'–'}</td>
       <td>${g.table||'–'}</td>
+      <td style="color:var(--success);font-weight:600">${g.gift?'₪'+Number(g.gift).toLocaleString():'–'}</td>
       <td>${actionBtns('editGuest','guests',g.id)}</td>
     </tr>`).join('')
-    :`<tr><td colspan="9"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
+    :`<tr><td colspan="10"><div class="empty-state"><div class="icon">👥</div><p>אין אורחים</p></div></td></tr>`;
 }
 function openGuestModal(id){
   editingId=id||null;
@@ -1245,6 +1249,7 @@ function openGuestModal(id){
     document.getElementById('g-count').value=g.count||1;
     document.getElementById('g-arriving').value=g.arriving||0;
     document.getElementById('g-table').value=g.table||'';
+    document.getElementById('g-gift').value=g.gift||0;
     document.getElementById('g-notes').value=g.notes||'';
   }else{
     document.getElementById('guest-modal-title').textContent='➕ אורח חדש';
@@ -1255,6 +1260,7 @@ function openGuestModal(id){
     document.getElementById('g-count').value=1;
     document.getElementById('g-arriving').value=0;
     document.getElementById('g-table').value='';
+    document.getElementById('g-gift').value=0;
     document.getElementById('g-notes').value='';
   }
   openModal('guestModal');
@@ -1269,6 +1275,7 @@ function saveGuest(){
     count:+document.getElementById('g-count').value||1,
     arriving:+document.getElementById('g-arriving').value||0,
     table:document.getElementById('g-table').value.trim(),
+    gift:+document.getElementById('g-gift').value||0,
     notes:document.getElementById('g-notes').value.trim()};
   if(!obj.name)return alert('נא להזין שם');
   if(editingId){
